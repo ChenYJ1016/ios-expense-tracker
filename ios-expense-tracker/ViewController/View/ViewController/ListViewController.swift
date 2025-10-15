@@ -12,10 +12,10 @@ class ListViewController: UIViewController {
     
     
     // MARK: properties
-    var allExpenses: [Expense] = [
-        Expense(name: "Lunch", date: DateComponents(year: 2025, month: 10, day: 10), type: .food, amount: 6.10),
-        Expense(name: "Bus ride", date: DateComponents(year: 2025, month: 10, day: 10), type: .transport, amount: 1.70)
-    ]
+//    var allExpenses: [Expense] = [
+//        Expense(name: "Lunch", date: DateComponents(year: 2025, month: 10, day: 10), type: .food, amount: 6.10),
+//        Expense(name: "Bus ride", date: DateComponents(year: 2025, month: 10, day: 10), type: .transport, amount: 1.70)
+//    ]
     
     
     // UIVIews
