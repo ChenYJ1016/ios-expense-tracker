@@ -31,6 +31,13 @@ class ListViewController: UIViewController {
         title = "No money 💰"
         navigationItem.largeTitleDisplayMode = .always
         
+        
+        NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification,
+        object: nil, queue: .main) { [weak self] _ in
+                guard let self else { return }
+                try? self.store.saveExpenses(self.allExpenses)
+        }
+        
         allExpenses = store.loadExpenses()
         setupNavigationBar()
         setupTableView()
