@@ -15,7 +15,8 @@ class ExpenseDetailViewController: UITableViewController{
     weak var delegate: ExpenseDetailViewControllerDelegate?
     var expense: Expense
     var index: Int
-    
+    var allExpenses: [Expense] = []
+        
     private let detailCellIdentifier = "ExpenseDetailCell"
     
     init(expense: Expense, index: Int) {
@@ -32,7 +33,7 @@ class ExpenseDetailViewController: UITableViewController{
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: detailCellIdentifier)
-        
+                
         self.setupNavigationBar()
     }
     

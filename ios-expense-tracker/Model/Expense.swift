@@ -6,7 +6,7 @@
 //
 import UIKit
 
-enum ExpenseType: String, CaseIterable{
+enum ExpenseType: String, CaseIterable, Codable{
     case transport = "Transport"
     case grocery = "Grocery"
     case miscellaneous = "Miscellaneous"
@@ -15,7 +15,7 @@ enum ExpenseType: String, CaseIterable{
     case food = "Food"
 }
 
-struct Expense: Identifiable{
+struct Expense: Identifiable, Codable{
     let id = UUID()
     var name: String
     var date: DateComponents

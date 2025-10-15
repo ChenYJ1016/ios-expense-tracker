@@ -21,6 +21,8 @@ class ListViewController: UIViewController {
     // UIVIews
     let expenseTableView = UITableView()
     
+    private let store = ExpenseDataStore.shared
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -29,7 +31,7 @@ class ListViewController: UIViewController {
         title = "No money 💰"
         navigationItem.largeTitleDisplayMode = .always
         
-        
+        allExpenses = store.loadExpenses()
         setupNavigationBar()
         setupTableView()
     }
@@ -125,6 +127,7 @@ extension ListViewController: UITableViewDelegate{
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             allExpenses.remove(at: indexPath.row)
+            store.saveExpenses(allExpenses)
             expenseTableView.deleteRows(at: [indexPath], with: .fade)
         }
     }
@@ -133,6 +136,7 @@ extension ListViewController: UITableViewDelegate{
 extension ListViewController: ExpenseFormControllerDelegate{
     func didAddExpense(_ expense: Expense) {
         allExpenses.append(expense)
+        store.saveExpenses(allExpenses)
         expenseTableView.reloadData()
     }
 }
@@ -141,6 +145,8 @@ extension ListViewController: ExpenseDetailViewControllerDelegate{
     func didFinishEditing(expense updatedExpense: Expense, at index: Int) {
         if let index = allExpenses.firstIndex(where: { $0.id == updatedExpense.id }) {
             allExpenses[index] = updatedExpense  // replace old struct with new one
+            
+            store.saveExpenses(allExpenses)
             expenseTableView.reloadData()
         }
     }

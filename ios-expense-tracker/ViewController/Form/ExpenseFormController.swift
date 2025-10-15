@@ -16,7 +16,7 @@ class ExpenseFormController: UITableViewController {
     // MARK: - Properties
     weak var delegate: ExpenseFormControllerDelegate?
     var expense: Expense?
-    
+        
     let textFieldCellIdentifier = "TextFieldCell"
     let datePickerCellIdentifier = "DatePickerCell"
     let typeCellIdentifier = "TypeCell"
@@ -32,7 +32,7 @@ class ExpenseFormController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureForEditing()
-
+        
         tableView.register(TextFieldCell.self, forCellReuseIdentifier: textFieldCellIdentifier)
         tableView.register(DatePickerCell.self, forCellReuseIdentifier: datePickerCellIdentifier)
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: typeCellIdentifier)
