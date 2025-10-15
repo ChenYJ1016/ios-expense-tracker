@@ -61,13 +61,14 @@ class ExpenseFormController: UITableViewController {
     }
     
     @objc private func saveTapped(){
-        if let expenseToUpdate = expense{
-            expenseToUpdate.name = expenseName
-            expenseToUpdate.date = Calendar.current.dateComponents([.year, .month, .day], from: expenseDate)
-            expenseToUpdate.type = expenseType
-            expenseToUpdate.amount = expenseAmount
+        if let expenseToUpdate = expense {
+            var updatedExpense = expenseToUpdate
             
-            delegate?.didUpdateExpense(expenseToUpdate)
+            updatedExpense.name = expenseName
+            updatedExpense.date = Calendar.current.dateComponents([.year, .month, .day], from: expenseDate)
+            updatedExpense.type = expenseType
+            updatedExpense.amount = expenseAmount
+            delegate?.didUpdateExpense(updatedExpense)
         }else{
             let newExpense = Expense(
                 name: expenseName, date: Calendar.current.dateComponents([.year, .month, .day], from: expenseDate), type: expenseType, amount: expenseAmount

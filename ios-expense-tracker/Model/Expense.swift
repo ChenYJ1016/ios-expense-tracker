@@ -15,16 +15,11 @@ enum ExpenseType: String, CaseIterable{
     case food = "Food"
 }
 
-class Expense{
+struct Expense: Identifiable{
+    let id = UUID()
     var name: String
     var date: DateComponents
     var type: ExpenseType
     var amount: Decimal
     
-    init(name: String, date: DateComponents, type: ExpenseType, amount: Decimal) {
-        self.name = name
-        self.date = date
-        self.type = type
-        self.amount = amount
-    }
 }

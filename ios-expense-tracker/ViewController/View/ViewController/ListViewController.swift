@@ -17,7 +17,7 @@ class ListViewController: UIViewController {
 //        Expense(name: "Bus ride", date: DateComponents(year: 2025, month: 10, day: 10), type: .transport, amount: 1.70)
 //    ]
     
-    
+    var allExpenses: [Expense] = []
     // UIVIews
     let expenseTableView = UITableView()
     
@@ -138,8 +138,10 @@ extension ListViewController: ExpenseFormControllerDelegate{
 }
 
 extension ListViewController: ExpenseDetailViewControllerDelegate{
-    func didFisnishEditing(expense updatedExpense: Expense, at index: Int) {
-        allExpenses[index] = updatedExpense
-        expenseTableView.reloadData()
+    func didFinishEditing(expense updatedExpense: Expense, at index: Int) {
+        if let index = allExpenses.firstIndex(where: { $0.id == updatedExpense.id }) {
+            allExpenses[index] = updatedExpense  // replace old struct with new one
+            expenseTableView.reloadData()
+        }
     }
 }
