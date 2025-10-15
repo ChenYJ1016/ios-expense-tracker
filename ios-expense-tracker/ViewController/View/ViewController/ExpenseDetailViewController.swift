@@ -8,7 +8,7 @@
 import UIKit
 
 protocol ExpenseDetailViewControllerDelegate : AnyObject{
-    func didFinishEditing(expense: Expense, at index: Int)
+    func didFinishEditing(expense: Expense)
 }
 
 class ExpenseDetailViewController: UITableViewController{
@@ -128,7 +128,7 @@ class ExpenseDetailViewController: UITableViewController{
 extension ExpenseDetailViewController: ExpenseFormControllerDelegate{
     func didUpdateExpense(_ expense: Expense) {
         self.expense = expense
-        delegate?.didFinishEditing(expense: expense, at: self.index)
+        delegate?.didFinishEditing(expense: expense)
         tableView.reloadData()
     }
 }

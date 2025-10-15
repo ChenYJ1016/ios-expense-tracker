@@ -149,7 +149,7 @@ extension ListViewController: ExpenseFormControllerDelegate{
 }
 
 extension ListViewController: ExpenseDetailViewControllerDelegate{
-    func didFinishEditing(expense updatedExpense: Expense, at index: Int) {
+    func didFinishEditing(expense updatedExpense: Expense) {
         if let index = allExpenses.firstIndex(where: { $0.id == updatedExpense.id }) {
             allExpenses[index] = updatedExpense  // replace old struct with new one
             
