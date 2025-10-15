@@ -9,6 +9,8 @@ import UIKit
 
 class ListViewController: UIViewController {
     
+    
+    
     // MARK: properties
     var allExpenses: [Expense] = [
         Expense(name: "Lunch", date: DateComponents(year: 2025, month: 10, day: 10), type: .food, amount: 6.10),
@@ -110,7 +112,8 @@ extension ListViewController: UITableViewDelegate{
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let tappedRow = allExpenses[indexPath.row]
         
-        let detailVC = ExpenseDetailViewController(expense: tappedRow)
+        let detailVC = ExpenseDetailViewController(expense: tappedRow, index: indexPath.row)
+        detailVC.delegate = self
         navigationController?.pushViewController(detailVC, animated: true)
     }
     
@@ -130,6 +133,13 @@ extension ListViewController: UITableViewDelegate{
 extension ListViewController: ExpenseFormControllerDelegate{
     func didAddExpense(_ expense: Expense) {
         allExpenses.append(expense)
+        expenseTableView.reloadData()
+    }
+}
+
+extension ListViewController: ExpenseDetailViewControllerDelegate{
+    func didFisnishEditing(expense updatedExpense: Expense, at index: Int) {
+        allExpenses[index] = updatedExpense
         expenseTableView.reloadData()
     }
 }
