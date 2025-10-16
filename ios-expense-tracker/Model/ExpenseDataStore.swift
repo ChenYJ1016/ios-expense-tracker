@@ -20,7 +20,7 @@ class ExpenseDataStore {
         return documentsPath.appendingPathComponent("expenses.json")
     }
 
-    func loadExpenses() -> [Expense] {
+    func loadExpenses()  -> [Expense]  {
         guard let data = try? Data(contentsOf: fileURL),
               let expenses = try? JSONDecoder().decode([Expense].self, from: data) else {
             return []
@@ -40,32 +40,34 @@ class ExpenseDataStore {
             // This 'catch' block will run if the write operation fails
             print("Error saving expenses: \(error.localizedDescription)")
         }
+//        let date = try JSONEncoder().encode(expenses)
+//        try date.write(to: fileURL)
     }
     
-    func addExpense(_ expense: Expense) throws {
-        var allExpenses = try loadExpenses()
+    func addExpense(_ expense: Expense)  {
+        var allExpenses = loadExpenses()
         allExpenses.append(expense)
-        try saveExpenses(allExpenses)
+        saveExpenses(allExpenses)
     }
     
-    func updateExpense(_ expense: Expense) throws {
-        var allExpenses = try loadExpenses()
+    func updateExpense(_ expense: Expense)  {
+        var allExpenses = loadExpenses()
         if let index = allExpenses.firstIndex(where: {$0.id == expense.id}){
             allExpenses[index] = expense
         }
         
-        try saveExpenses(allExpenses)
+        saveExpenses(allExpenses)
     }
     
-    func deleteExpense(_ expense: Expense) throws {
-        var allExpenses = try loadExpenses()
+    func deleteExpense(_ expense: Expense)  {
+        var allExpenses = loadExpenses()
         allExpenses.removeAll(where: {$0.id == expense.id})
-        try saveExpenses(allExpenses)
+        saveExpenses(allExpenses)
     }
     
-    func deleteExpense(at index: Int) throws {
-        var allExpenses = try loadExpenses()
+    func deleteExpense(at index: Int)  {
+        var allExpenses = loadExpenses()
         allExpenses.remove(at: index)
-        try saveExpenses(allExpenses)
+        saveExpenses(allExpenses)
     }
 }
