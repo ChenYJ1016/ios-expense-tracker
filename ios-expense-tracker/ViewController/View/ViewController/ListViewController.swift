@@ -242,8 +242,10 @@ extension ListViewController: UITableViewDelegate{
             self.applySnapshot()
             done(true)
         }
-
-        return UISwipeActionsConfiguration(actions: [delete])
+        
+        let config = UISwipeActionsConfiguration(actions: [delete])
+        config.performsFirstActionWithFullSwipe = true
+        return config
     }
 }
 
