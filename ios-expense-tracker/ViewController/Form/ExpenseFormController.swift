@@ -65,13 +65,13 @@ class ExpenseFormController: UITableViewController {
             var updatedExpense = expenseToUpdate
             
             updatedExpense.name = expenseName
-            updatedExpense.date = Calendar.current.dateComponents([.year, .month, .day], from: expenseDate)
+            updatedExpense.date = expenseDate
             updatedExpense.type = expenseType
             updatedExpense.amount = expenseAmount
             delegate?.didUpdateExpense(updatedExpense)
         }else{
             let newExpense = Expense(
-                name: expenseName, date: Calendar.current.dateComponents([.year, .month, .day], from: expenseDate), type: expenseType, amount: expenseAmount
+                name: expenseName, date: expenseDate, type: expenseType, amount: expenseAmount
             )
             
             delegate?.didAddExpense(newExpense)
@@ -84,7 +84,7 @@ class ExpenseFormController: UITableViewController {
         guard let expenseToEdit = expense else { return }
         
         self.expenseName = expenseToEdit.name
-        self.expenseDate = Calendar.current.date(from: expenseToEdit.date) ?? Date()
+        self.expenseDate = expenseToEdit.date
         self.expenseType = expenseToEdit.type
         self.expenseAmount = expenseToEdit.amount
     }

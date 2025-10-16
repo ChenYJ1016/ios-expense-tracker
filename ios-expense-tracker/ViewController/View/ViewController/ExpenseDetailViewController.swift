@@ -95,9 +95,8 @@ class ExpenseDetailViewController: UITableViewController{
                 content.secondaryText = expense.name
             case (0, 1):
                 content.text = "Date"
-                if let date = Calendar.current.date(from: expense.date){
-                    content.secondaryText = date.formatted(date: .numeric, time: .omitted)
-                }
+                content.secondaryText = expense.date.formatted(date: .numeric, time: .omitted)
+
             case (0, 2):
                 content.text = "Expense Type"
                 content.secondaryText = expense.type.rawValue
