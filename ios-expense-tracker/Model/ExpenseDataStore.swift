@@ -40,8 +40,6 @@ class ExpenseDataStore {
             // This 'catch' block will run if the write operation fails
             print("Error saving expenses: \(error.localizedDescription)")
         }
-//        let date = try JSONEncoder().encode(expenses)
-//        try date.write(to: fileURL)
     }
     
     func addExpense(_ expense: Expense)  {
