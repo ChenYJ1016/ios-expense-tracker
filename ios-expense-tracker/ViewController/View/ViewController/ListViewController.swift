@@ -37,7 +37,7 @@ class ListViewController: UIViewController {
         
         // Do any additional setup after loading the view.
         view.backgroundColor = .systemBackground
-        title = "No money 💰"
+        title = "No Money 💰"
         navigationItem.largeTitleDisplayMode = .always
         
         setupNavigationBar()
@@ -52,11 +52,13 @@ class ListViewController: UIViewController {
     
     private func setupSearchController(){
         searchController.searchResultsUpdater = self
-        searchController.obscuresBackgroundDuringPresentation = false
         searchController.searchBar.placeholder = "Search Expenses"
+        
         navigationItem.searchController = searchController
         definesPresentationContext = true
         searchController.hidesNavigationBarDuringPresentation = false
+        searchController.obscuresBackgroundDuringPresentation = false
+
         
         searchController.delegate = self
         searchController.searchBar.scopeButtonTitles = scopeTitles
@@ -97,7 +99,7 @@ class ListViewController: UIViewController {
             expenseTableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             expenseTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             expenseTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            expenseTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+            expenseTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
         
         expenseTableView.delegate = self
@@ -108,7 +110,7 @@ class ListViewController: UIViewController {
     // MARK: Helper
     
     @objc private func addNewExpense(){
-        // TODO: add new expense
+        // add new expense
         let addVC = ExpenseFormController()
         addVC.delegate = self
         let navController = UINavigationController(rootViewController: addVC)
@@ -132,17 +134,17 @@ class ListViewController: UIViewController {
     
     @objc private func filterButtonTapped(){
         if searchController.isActive {
-                    UIView.animate(withDuration: 0.3) {
-                        self.searchController.searchBar.showsScopeBar.toggle()
-                        self.searchController.searchBar.sizeToFit()
-                    }
-                } else {
-                    searchController.isActive = true
-                    UIView.animate(withDuration: 0.3) {
-                        self.searchController.searchBar.showsScopeBar = true
-                        self.searchController.searchBar.sizeToFit()
-                    }
-                }
+            UIView.animate(withDuration: 0.3) {
+                self.searchController.searchBar.showsScopeBar.toggle()
+                self.searchController.searchBar.sizeToFit()
+            }
+        } else {
+            searchController.isActive = true
+            UIView.animate(withDuration: 0.3) {
+                self.searchController.searchBar.showsScopeBar = true
+                self.searchController.searchBar.sizeToFit()
+            }
+        }
     }
 }
 
