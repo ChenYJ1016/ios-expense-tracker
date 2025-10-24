@@ -24,6 +24,10 @@ class ListViewController: UIViewController {
     private var addButton: UIBarButtonItem!
     private var filterButton: UIBarButtonItem!
     
+    private var dateFilterView: UIStackView!
+    private var dateFilterSwitch: UISwitch!
+    private var dateFilterLabel: UILabel!
+    
     private var isSearching: Bool {
         let hasText = !(searchController.searchBar.text?.isEmpty ?? true)
         let hasScope = searchController.searchBar.selectedScopeButtonIndex != 0
@@ -42,6 +46,8 @@ class ListViewController: UIViewController {
         
         setupNavigationBar()
         setupSearchController()
+        setupDateFilterView()
+
         setupTableView()
 
         setupDiffableDataSource()
@@ -67,6 +73,32 @@ class ListViewController: UIViewController {
     }
     
     
+    private func setupDateFilterView(){
+        dateFilterLabel = UILabel()
+        dateFilterLabel.text = "Filter by Date Range"
+        dateFilterLabel.font = .preferredFont(forTextStyle: .subheadline)
+        
+        dateFilterSwitch = UISwitch()
+        
+        dateFilterView = UIStackView(arrangedSubviews: [dateFilterLabel, dateFilterSwitch])
+        dateFilterView.axis = .horizontal
+        dateFilterView.spacing = 8
+        dateFilterView.alignment = .center
+        dateFilterView.isLayoutMarginsRelativeArrangement = true
+        dateFilterView.layoutMargins = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+        dateFilterView.backgroundColor = .systemGray6
+        
+        dateFilterView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(dateFilterView)
+        
+        dateFilterView.isHidden = true
+        
+        NSLayoutConstraint.activate([
+                    dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                    dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                    dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+                ])
+    }
     
     private func setupNavigationBar(){
         let appearance = UINavigationBarAppearance()
@@ -82,9 +114,7 @@ class ListViewController: UIViewController {
         filterButton = UIBarButtonItem(image: filterIcon, style: .plain, target: self, action: #selector(filterButtonTapped))
         
         navigationItem.rightBarButtonItem = addButton
-        
-
-        
+    
         navigationController?.navigationBar.standardAppearance = appearance
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
         navigationController?.navigationBar.compactAppearance = appearance
@@ -96,7 +126,7 @@ class ListViewController: UIViewController {
         view.addSubview(expenseTableView)
         
         NSLayoutConstraint.activate([
-            expenseTableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            expenseTableView.topAnchor.constraint(equalTo: dateFilterView.bottomAnchor),
             expenseTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             expenseTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             expenseTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
@@ -137,6 +167,7 @@ class ListViewController: UIViewController {
             UIView.animate(withDuration: 0.3) {
                 self.searchController.searchBar.showsScopeBar.toggle()
                 self.searchController.searchBar.sizeToFit()
+                self.dateFilterView.isHidden.toggle()
             }
         } else {
             searchController.isActive = true
@@ -279,13 +310,9 @@ extension ListViewController: UISearchBarDelegate{
         updateSearchResults(for: searchController)
     }
     
-    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
-//        searchBar.showsScopeBar = true
-        
-    }
-    
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.showsScopeBar = false
+        dateFilterView.isHidden = true
     }
 }
 
