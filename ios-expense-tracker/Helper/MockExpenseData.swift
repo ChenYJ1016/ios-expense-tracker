@@ -1,4 +1,3 @@
-
 //
 //  MockExpenseData.swift
 //  ios-expense-tracker
@@ -34,7 +33,7 @@ struct MockExpenseData {
                 amount: 5.50),
         
         Expense(name: "Train Fare",
-                date: date(year: 2025, month: 10, day: 1),
+                date: date(year: 2025, month: 10, day: 1, hour: 9), // Added hour for sorting
                 type: .transport,
                 amount: 2.80),
         
@@ -86,7 +85,64 @@ struct MockExpenseData {
         Expense(name: "New Notebook",
                 date: date(year: 2025, month: 10, day: 23),
                 type: .miscellaneous,
-                amount: 15.00)
+                amount: 15.00),
+        
+        // --- Added More Data ---
+        
+        Expense(name: "Taxi Home (Late)",
+                date: date(year: 2025, month: 10, day: 24, hour: 23),
+                type: .transport,
+                amount: 32.50),
+        
+        Expense(name: "Coffee & Cake",
+                date: date(year: 2025, month: 10, day: 26, hour: 15),
+                type: .food,
+                amount: 12.80),
+
+        Expense(name: "Rent Payment",
+                date: date(year: 2025, month: 10, day: 28),
+                type: .bills,
+                amount: 1200.00),
+                
+        Expense(name: "Halloween Party Supplies",
+                date: date(year: 2025, month: 10, day: 30),
+                type: .miscellaneous,
+                amount: 55.20),
+        
+        Expense(name: "Monthly Train Pass",
+                date: date(year: 2025, month: 11, day: 1, hour: 8),
+                type: .transport,
+                amount: 85.00),
+                
+        Expense(name: "Morning Coffee",
+                date: date(year: 2025, month: 11, day: 1, hour: 9),
+                type: .food,
+                amount: 5.50),
+        
+        Expense(name: "Weekly Groceries",
+                date: date(year: 2025, month: 11, day: 2),
+                type: .grocery,
+                amount: 110.40),
+        
+        Expense(name: "Internet Bill",
+                date: date(year: 2025, month: 11, day: 5),
+                type: .bills,
+                amount: 49.99),
+        
+        Expense(name: "Gym Membership",
+                date: date(year: 2025, month: 11, day: 6),
+                type: .miscellaneous,
+                amount: 75.00),
+        
+        Expense(name: "Pizza Night",
+                date: date(year: 2025, month: 11, day: 8, hour: 19),
+                type: .food,
+                amount: 38.00),
+        
+        Expense(name: "Savings Transfer",
+                date: date(year: 2025, month: 11, day: 15),
+                type: .savings,
+                amount: 500.00)
     ]
 }
 

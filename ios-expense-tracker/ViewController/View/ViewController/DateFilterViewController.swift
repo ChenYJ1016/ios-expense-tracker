@@ -38,9 +38,20 @@ class DateFilterViewController: UIViewController {
         picker.datePickerMode = .date
         picker.preferredDatePickerStyle = .wheels
         picker.date = currentStartDate ?? Date()
+        
+        picker.addAction(UIAction(handler: {[weak self] _ in
+            self?.startDatePickerChanged()
+        }), for: .valueChanged)
         return picker
     }()
     
+    private func startDatePickerChanged() {
+        endPicker.minimumDate = startPicker.date
+        
+        if endPicker.date < startPicker.date {
+            endPicker.date = startPicker.date
+        }
+    }
     private let endLabel: UILabel = {
         let label = UILabel()
         label.text = "End Date"
@@ -89,6 +100,7 @@ class DateFilterViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
         setupLayout()
+        endPicker.minimumDate = startPicker.date
     }
     
     

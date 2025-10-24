@@ -7,12 +7,15 @@
 import UIKit
 
 nonisolated enum ExpenseType: String, CaseIterable, Codable, Hashable{
-    case transport = "Transport"
-    case grocery = "Grocery"
-    case miscellaneous = "Miscellaneous"
-    case bills = "Bills"
-    case savings = "savings"
-    case food = "Food"
+    case bills = "🧾"
+    case food = "🥘"
+    case grocery = "🛒"
+    case savings = "🏦"
+    case transport = "🚌"
+    case miscellaneous = "😍"
+    
+    
+    
 }
 
 nonisolated struct Expense: Identifiable, Codable, Hashable{
