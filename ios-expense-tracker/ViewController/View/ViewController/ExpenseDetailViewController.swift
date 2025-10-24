@@ -8,14 +8,15 @@
 import UIKit
 
 protocol ExpenseDetailViewControllerDelegate : AnyObject{
-    func didFisnishEditing(expense: Expense, at index: Int)
+    func didFinishEditing(expense: Expense)
 }
 
 class ExpenseDetailViewController: UITableViewController{
     weak var delegate: ExpenseDetailViewControllerDelegate?
     var expense: Expense
     var index: Int
-    
+    var allExpenses: [Expense] = []
+        
     private let detailCellIdentifier = "ExpenseDetailCell"
     
     init(expense: Expense, index: Int) {
@@ -32,7 +33,7 @@ class ExpenseDetailViewController: UITableViewController{
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: detailCellIdentifier)
-        
+                
         self.setupNavigationBar()
     }
     
@@ -94,9 +95,8 @@ class ExpenseDetailViewController: UITableViewController{
                 content.secondaryText = expense.name
             case (0, 1):
                 content.text = "Date"
-                if let date = Calendar.current.date(from: expense.date){
-                    content.secondaryText = date.formatted(date: .numeric, time: .omitted)
-                }
+                content.secondaryText = expense.date.formatted(date: .numeric, time: .omitted)
+
             case (0, 2):
                 content.text = "Expense Type"
                 content.secondaryText = expense.type.rawValue
@@ -127,7 +127,7 @@ class ExpenseDetailViewController: UITableViewController{
 extension ExpenseDetailViewController: ExpenseFormControllerDelegate{
     func didUpdateExpense(_ expense: Expense) {
         self.expense = expense
-        delegate?.didFisnishEditing(expense: expense, at: self.index)
+        delegate?.didFinishEditing(expense: expense)
         tableView.reloadData()
     }
 }

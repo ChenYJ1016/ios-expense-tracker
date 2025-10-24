@@ -16,7 +16,7 @@ class ExpenseFormController: UITableViewController {
     // MARK: - Properties
     weak var delegate: ExpenseFormControllerDelegate?
     var expense: Expense?
-    
+        
     let textFieldCellIdentifier = "TextFieldCell"
     let datePickerCellIdentifier = "DatePickerCell"
     let typeCellIdentifier = "TypeCell"
@@ -32,7 +32,7 @@ class ExpenseFormController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureForEditing()
-
+        
         tableView.register(TextFieldCell.self, forCellReuseIdentifier: textFieldCellIdentifier)
         tableView.register(DatePickerCell.self, forCellReuseIdentifier: datePickerCellIdentifier)
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: typeCellIdentifier)
@@ -61,16 +61,17 @@ class ExpenseFormController: UITableViewController {
     }
     
     @objc private func saveTapped(){
-        if let expenseToUpdate = expense{
-            expenseToUpdate.name = expenseName
-            expenseToUpdate.date = Calendar.current.dateComponents([.year, .month, .day], from: expenseDate)
-            expenseToUpdate.type = expenseType
-            expenseToUpdate.amount = expenseAmount
+        if let expenseToUpdate = expense {
+            var updatedExpense = expenseToUpdate
             
-            delegate?.didUpdateExpense(expenseToUpdate)
+            updatedExpense.name = expenseName
+            updatedExpense.date = expenseDate
+            updatedExpense.type = expenseType
+            updatedExpense.amount = expenseAmount
+            delegate?.didUpdateExpense(updatedExpense)
         }else{
             let newExpense = Expense(
-                name: expenseName, date: Calendar.current.dateComponents([.year, .month, .day], from: expenseDate), type: expenseType, amount: expenseAmount
+                name: expenseName, date: expenseDate, type: expenseType, amount: expenseAmount
             )
             
             delegate?.didAddExpense(newExpense)
@@ -83,7 +84,7 @@ class ExpenseFormController: UITableViewController {
         guard let expenseToEdit = expense else { return }
         
         self.expenseName = expenseToEdit.name
-        self.expenseDate = Calendar.current.date(from: expenseToEdit.date) ?? Date()
+        self.expenseDate = expenseToEdit.date
         self.expenseType = expenseToEdit.type
         self.expenseAmount = expenseToEdit.amount
     }

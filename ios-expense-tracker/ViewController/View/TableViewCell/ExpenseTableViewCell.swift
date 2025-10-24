@@ -43,12 +43,11 @@ class ExpenseTableViewCell: UITableViewCell {
         expenseNameLabel.text = expense.name
         expenseTypeLabel.text = expense.type.rawValue.capitalized
         expenseAmountLabel.text = CurrencyFormatter.shared.string(from: expense.amount)
-        if let date = Calendar.current.date(from: expense.date){
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateStyle = .medium
-            dateFormatter.timeStyle = .none
-            expenseDateLabel.text = dateFormatter.string(from: date)
-        }
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .none
+        expenseDateLabel.text = dateFormatter.string(from: expense.date)
+        
     }
     
     private func setupUI(){

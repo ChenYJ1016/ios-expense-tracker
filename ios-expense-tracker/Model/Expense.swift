@@ -6,7 +6,7 @@
 //
 import UIKit
 
-enum ExpenseType: String, CaseIterable{
+nonisolated enum ExpenseType: String, CaseIterable, Codable, Hashable{
     case transport = "Transport"
     case grocery = "Grocery"
     case miscellaneous = "Miscellaneous"
@@ -15,16 +15,11 @@ enum ExpenseType: String, CaseIterable{
     case food = "Food"
 }
 
-class Expense{
+nonisolated struct Expense: Identifiable, Codable, Hashable{
+    let id = UUID()
     var name: String
-    var date: DateComponents
+    var date: Date
     var type: ExpenseType
     var amount: Decimal
     
-    init(name: String, date: DateComponents, type: ExpenseType, amount: Decimal) {
-        self.name = name
-        self.date = date
-        self.type = type
-        self.amount = amount
-    }
 }
