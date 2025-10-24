@@ -25,13 +25,18 @@ class ListViewController: UIViewController {
     private var filterButton: UIBarButtonItem!
     
     private var dateFilterView: UIStackView!
-    private var dateFilterSwitch: UISwitch!
+    private var dateFilterButton: UIButton!
     private var dateFilterLabel: UILabel!
+    
+    private var currentStartDate: Date?
+    private var currentEndDate: Date?
     
     private var isSearching: Bool {
         let hasText = !(searchController.searchBar.text?.isEmpty ?? true)
         let hasScope = searchController.searchBar.selectedScopeButtonIndex != 0
-        return searchController.isActive && (hasText || hasScope)
+        let hasDateFilter = currentStartDate != nil || currentEndDate != nil
+        
+        return searchController.isActive && (hasText || hasScope || hasDateFilter)
     }
     
     private var scopeTitles: [String] = ["All"] + ExpenseType.allCases.map { $0.rawValue.capitalized }
@@ -73,32 +78,63 @@ class ListViewController: UIViewController {
     }
     
     
-    private func setupDateFilterView(){
-        dateFilterLabel = UILabel()
-        dateFilterLabel.text = "Filter by Date Range"
-        dateFilterLabel.font = .preferredFont(forTextStyle: .subheadline)
+    private func setupDateFilterView() {
+            dateFilterLabel = UILabel()
+            dateFilterLabel.text = "Filter by Date Range"
+            dateFilterLabel.font = .preferredFont(forTextStyle: .subheadline)
+            
+            dateFilterButton = UIButton(type: .system)
+            dateFilterButton.setTitle("None ", for: .normal)
+            dateFilterButton.setImage(UIImage(systemName: "chevron.right"), for: .normal)
+            dateFilterButton.semanticContentAttribute = .forceRightToLeft
+            dateFilterButton.addTarget(self, action: #selector(selectDateTapped), for: .touchUpInside)
+            
+            dateFilterView = UIStackView(arrangedSubviews: [dateFilterLabel, dateFilterButton])
+            dateFilterView.axis = .horizontal
+            dateFilterView.spacing = 8
+            dateFilterView.alignment = .center
+            dateFilterView.isLayoutMarginsRelativeArrangement = true
+            dateFilterView.layoutMargins = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+            dateFilterView.backgroundColor = .systemGray6
+            
+            dateFilterView.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(dateFilterView)
+            
+            dateFilterView.isHidden = true
+            
+            NSLayoutConstraint.activate([
+                dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            ])
+        }
+    
+    @objc private func selectDateTapped() {
+            let dateFilterVC = DateFilterViewController()
+            
+            dateFilterVC.delegate = self
+            dateFilterVC.currentStartDate = self.currentStartDate
+            dateFilterVC.currentEndDate = self.currentEndDate
+            
+            if let sheet = dateFilterVC.sheetPresentationController {
+                sheet.detents = [.large()]
+                sheet.prefersGrabberVisible = true
+            }
+            present(dateFilterVC, animated: true)
+        }
         
-        dateFilterSwitch = UISwitch()
-        
-        dateFilterView = UIStackView(arrangedSubviews: [dateFilterLabel, dateFilterSwitch])
-        dateFilterView.axis = .horizontal
-        dateFilterView.spacing = 8
-        dateFilterView.alignment = .center
-        dateFilterView.isLayoutMarginsRelativeArrangement = true
-        dateFilterView.layoutMargins = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
-        dateFilterView.backgroundColor = .systemGray6
-        
-        dateFilterView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(dateFilterView)
-        
-        dateFilterView.isHidden = true
-        
-        NSLayoutConstraint.activate([
-                    dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-                    dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                    dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-                ])
-    }
+        private func updateDateFilterButtonLabel() {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            
+            if let startDate = currentStartDate, let endDate = currentEndDate {
+                let startString = formatter.string(from: startDate)
+                let endString = formatter.string(from: endDate)
+                dateFilterButton.setTitle("\(startString) - \(endString) ", for: .normal)
+            } else {
+                dateFilterButton.setTitle("None ", for: .normal)
+            }
+        }
     
     private func setupNavigationBar(){
         let appearance = UINavigationBarAppearance()
@@ -284,24 +320,33 @@ extension ListViewController: ExpenseDetailViewControllerDelegate{
 extension ListViewController: UISearchResultsUpdating{
     func updateSearchResults(for searchController: UISearchController) {
 
-        var filtered = allExpenses
-        // by scope
-        let selectedScopeIndex = searchController.searchBar.selectedScopeButtonIndex
-        if selectedScopeIndex > 0{
-            let expenseType = ExpenseType.allCases[selectedScopeIndex - 1]
-            filtered = filtered.filter {$0.type == expenseType}
+            var filtered = allExpenses
             
-        }
-        
-        if let searchText = searchController.searchBar.text, !searchText.isEmpty{
-            filtered = filtered.filter { expense in
-                expense.name.lowercased().contains(searchText.lowercased())
+            let selectedScopeIndex = searchController.searchBar.selectedScopeButtonIndex
+            if selectedScopeIndex > 0 {
+                let expenseType = ExpenseType.allCases[selectedScopeIndex - 1]
+                filtered = filtered.filter {$0.type == expenseType}
             }
+            
+            if let searchText = searchController.searchBar.text, !searchText.isEmpty {
+                filtered = filtered.filter { expense in
+                    expense.name.lowercased().contains(searchText.lowercased())
+                }
+            }
+            
+            if let startDate = currentStartDate, let endDate = currentEndDate {
+
+                let startOfDay = Calendar.current.startOfDay(for: startDate)
+                let endOfDay = Calendar.current.startOfDay(for: endDate).addingTimeInterval(24*60*60 - 1)
+
+                filtered = filtered.filter { expense in
+                    return expense.date >= startOfDay && expense.date <= endOfDay
+                }
+            }
+            
+            self.filteredExpenses = filtered
+            applySnapshot()
         }
-        
-        self.filteredExpenses = filtered
-        applySnapshot()
-    }
 
 }
 
@@ -312,7 +357,14 @@ extension ListViewController: UISearchBarDelegate{
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.showsScopeBar = false
-        dateFilterView.isHidden = true
+        
+        currentStartDate = nil
+        currentEndDate = nil
+        updateDateFilterButtonLabel()
+        
+        UIView.animate(withDuration: 0.3) {
+            self.dateFilterView.isHidden = true
+        }
     }
 }
 
@@ -323,5 +375,28 @@ extension ListViewController: UISearchControllerDelegate{
     
     func willDismissSearchController(_ searchController: UISearchController) {
         navigationItem.setRightBarButton(addButton, animated: true)
+        
+        currentStartDate = nil
+        currentEndDate = nil
+        updateDateFilterButtonLabel()
+        
+        UIView.animate(withDuration: 0.3) {
+            self.searchController.searchBar.showsScopeBar = false
+            self.dateFilterView.isHidden = true
+        }
     }
 }
+
+extension ListViewController: DateFilterViewControllerDelegate {
+    
+    func didApplyDateFilter(startDate: Date?, endDate: Date?) {
+
+        self.currentStartDate = startDate
+        self.currentEndDate = endDate
+        
+        updateDateFilterButtonLabel()
+        
+        updateSearchResults(for: searchController)
+    }
+}
+
