@@ -21,6 +21,9 @@ class ListViewController: UIViewController {
     
     private var filteredExpenses: [Expense] = []
     
+    private var addButton: UIBarButtonItem!
+    private var filterButton: UIBarButtonItem!
+    
     private var isSearching: Bool {
         let hasText = !(searchController.searchBar.text?.isEmpty ?? true)
         let hasScope = searchController.searchBar.selectedScopeButtonIndex != 0
@@ -37,76 +40,31 @@ class ListViewController: UIViewController {
         title = "No money 💰"
         navigationItem.largeTitleDisplayMode = .always
         
-        
-        setupDiffableDataSource()
-        
-        NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification,
-        object: nil, queue: .main) { [weak self] _ in
-                guard let self else { return }
-                try? self.store.saveExpenses(self.allExpenses)
-        }
-        
-        
+        setupNavigationBar()
         setupSearchController()
-        
+        setupTableView()
+
+        setupDiffableDataSource()
         allExpenses = store.loadExpenses()
         applySnapshot()
         
-        setupNavigationBar()
-        setupTableView()
-    }
-    
-    private func setupDiffableDataSource() {
-        dataSource = UITableViewDiffableDataSource<ExpenseType, Expense>(tableView: expenseTableView) {
-            // Add the explicit type for 'item' here
-            tableView, indexPath, item in
-            
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: ExpenseTableViewCell.identifier, for: indexPath) as? ExpenseTableViewCell else {
-                return UITableViewCell()
-            }
-            
-            cell.configure(with: item)
-            return cell
-        }
-        
-        dataSource.defaultRowAnimation = .fade
-        expenseTableView.dataSource = dataSource
-        expenseTableView.delegate = self
     }
     
     private func setupSearchController(){
         searchController.searchResultsUpdater = self
         searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = "Search Items"
+        searchController.searchBar.placeholder = "Search Expenses"
         navigationItem.searchController = searchController
         definesPresentationContext = true
+        searchController.hidesNavigationBarDuringPresentation = false
         
+        searchController.delegate = self
         searchController.searchBar.scopeButtonTitles = scopeTitles
         searchController.searchBar.delegate = self
+        searchController.searchBar.showsScopeBar = false
     }
     
-    private func applySnapshot(animatingDifferences: Bool = true) {
-        var snapshot = NSDiffableDataSourceSnapshot<ExpenseType, Expense>()
-
-        let current = isSearching ? filteredExpenses : allExpenses
-        
-        // Group items by type (1)
-        let grouped = Dictionary(grouping: current, by: { $0.type })
-
-        // Sort types alphabetically (1)
-        let sortedTypes = grouped.keys.sorted(by: { $0.rawValue < $1.rawValue })
-
-        // Build snapshot
-        snapshot.appendSections(sortedTypes)
-        for type in sortedTypes {
-            // (2) Force unwrap!
-            snapshot.appendItems(grouped[type]!, toSection: type)
-        }
-
-            // Apply it to the data source
-        dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
-        updateBackgroundMessage()
-    }
+    
     
     private func setupNavigationBar(){
         let appearance = UINavigationBarAppearance()
@@ -117,7 +75,13 @@ class ListViewController: UIViewController {
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 30, weight: .semibold)]
         
         // add button
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewExpense))
+        addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewExpense))
+        let filterIcon = UIImage(systemName: "line.3.horizontal.decrease.circle")
+        filterButton = UIBarButtonItem(image: filterIcon, style: .plain, target: self, action: #selector(filterButtonTapped))
+        
+        navigationItem.rightBarButtonItem = addButton
+        
+
         
         navigationController?.navigationBar.standardAppearance = appearance
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
@@ -130,11 +94,11 @@ class ListViewController: UIViewController {
         view.addSubview(expenseTableView)
         
         NSLayoutConstraint.activate([
-            expenseTableView.topAnchor.constraint(equalTo: view.topAnchor),
+            expenseTableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             expenseTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             expenseTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             expenseTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
-            ])
+        ])
         
         expenseTableView.delegate = self
         expenseTableView.rowHeight = UITableView.automaticDimension
@@ -164,6 +128,64 @@ class ListViewController: UIViewController {
             return
         }
         expenseTableView.backgroundView = label
+    }
+    
+    @objc private func filterButtonTapped(){
+        if searchController.isActive {
+                    UIView.animate(withDuration: 0.3) {
+                        self.searchController.searchBar.showsScopeBar.toggle()
+                        self.searchController.searchBar.sizeToFit()
+                    }
+                } else {
+                    searchController.isActive = true
+                    UIView.animate(withDuration: 0.3) {
+                        self.searchController.searchBar.showsScopeBar = true
+                        self.searchController.searchBar.sizeToFit()
+                    }
+                }
+    }
+}
+
+extension ListViewController{
+    private func setupDiffableDataSource() {
+        dataSource = UITableViewDiffableDataSource<ExpenseType, Expense>(tableView: expenseTableView) {
+            // Add the explicit type for 'item' here
+            tableView, indexPath, item in
+            
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: ExpenseTableViewCell.identifier, for: indexPath) as? ExpenseTableViewCell else {
+                return UITableViewCell()
+            }
+            
+            cell.configure(with: item)
+            return cell
+        }
+        
+        dataSource.defaultRowAnimation = .fade
+        expenseTableView.dataSource = dataSource
+        expenseTableView.delegate = self
+    }
+    
+    private func applySnapshot(animatingDifferences: Bool = true) {
+        var snapshot = NSDiffableDataSourceSnapshot<ExpenseType, Expense>()
+
+        let current = isSearching ? filteredExpenses : allExpenses
+        
+        // Group items by type (1)
+        let grouped = Dictionary(grouping: current, by: { $0.type })
+
+        // Sort types alphabetically (1)
+        let sortedTypes = grouped.keys.sorted(by: { $0.rawValue < $1.rawValue })
+
+        // Build snapshot
+        snapshot.appendSections(sortedTypes)
+        for type in sortedTypes {
+            // (2) Force unwrap!
+            snapshot.appendItems(grouped[type]!, toSection: type)
+        }
+
+            // Apply it to the data source
+        dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
+        updateBackgroundMessage()
     }
 }
 
@@ -247,6 +269,7 @@ extension ListViewController: UISearchResultsUpdating{
         self.filteredExpenses = filtered
         applySnapshot()
     }
+
 }
 
 extension ListViewController: UISearchBarDelegate{
@@ -255,10 +278,21 @@ extension ListViewController: UISearchBarDelegate{
     }
     
     func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
-        searchBar.showsScopeBar = true
+//        searchBar.showsScopeBar = true
+        
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.showsScopeBar = false
+    }
+}
+
+extension ListViewController: UISearchControllerDelegate{
+    func didPresentSearchController(_ searchController: UISearchController) {
+        navigationItem.setRightBarButton(filterButton, animated: true)
+    }
+    
+    func willDismissSearchController(_ searchController: UISearchController) {
+        navigationItem.setRightBarButton(addButton, animated: true)
     }
 }

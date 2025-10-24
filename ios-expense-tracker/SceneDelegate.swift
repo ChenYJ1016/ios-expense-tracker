@@ -19,8 +19,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
         ExpenseDataStore.shared.loadMockDataIfEmpty()
-        let rootViewController = UINavigationController(rootViewController: ListViewController())
-        window?.rootViewController = rootViewController
+        
+        let listVC = ListViewController()
+        let navigationController = UINavigationController(rootViewController: listVC)
+        
+        window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
     }
 
