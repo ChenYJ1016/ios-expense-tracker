@@ -20,8 +20,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window = UIWindow(windowScene: windowScene)
         ExpenseDataStore.shared.loadMockDataIfEmpty()
         
-        let listVC = ListViewController()
-        let navigationController = UINavigationController(rootViewController: listVC)
+        let mainVC = MainTabBarController()
+        let navigationController = UINavigationController(rootViewController: mainVC)
         
         window?.rootViewController = navigationController
         window?.makeKeyAndVisible()

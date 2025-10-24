@@ -46,7 +46,7 @@ class ListViewController: UIViewController {
         
         // Do any additional setup after loading the view.
         view.backgroundColor = .systemBackground
-        title = "No Money 💰"
+        title = "Expenses"
         navigationItem.largeTitleDisplayMode = .always
         
         setupNavigationBar()
@@ -75,6 +75,7 @@ class ListViewController: UIViewController {
         searchController.searchBar.scopeButtonTitles = scopeTitles
         searchController.searchBar.delegate = self
         searchController.searchBar.showsScopeBar = false
+        searchController.searchBar.searchTextField.textColor = .white
     }
     
     
