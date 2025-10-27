@@ -43,7 +43,8 @@ class ExpenseDetailViewController: UITableViewController{
         title = "Your expense"
 
         // add button
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .edit, target: self, action: #selector(editCurrentExpense))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "pencil"), style: .plain, target: self, action: #selector(editCurrentExpense))
+        
 
     }
     
