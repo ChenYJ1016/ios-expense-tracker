@@ -21,10 +21,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         appearance.configureWithDefaultBackground()
         appearance.backgroundColor = .systemMint
         appearance.shadowColor = .clear
-        
             
         appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.boldSystemFont(ofSize: 30)]
-        
 
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 17, weight: .semibold)]
 
@@ -39,7 +37,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         ExpenseDataStore.shared.loadMockDataIfEmpty()
         
         let mainVC = MainTabBarController()
-
         
         window?.rootViewController = mainVC
         window?.makeKeyAndVisible()
