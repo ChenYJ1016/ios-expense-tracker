@@ -53,7 +53,7 @@ class ExpenseFormController: UITableViewController {
         }
         
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(handleCancel))
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(saveTapped))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "document"), style: .plain, target: self, action: #selector(saveTapped))
     }
     
     @objc private func handleCancel(){

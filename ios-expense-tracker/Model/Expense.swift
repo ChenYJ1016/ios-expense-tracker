@@ -7,12 +7,29 @@
 import UIKit
 
 nonisolated enum ExpenseType: String, CaseIterable, Codable, Hashable{
-    case transport = "Transport"
-    case grocery = "Grocery"
-    case miscellaneous = "Miscellaneous"
-    case bills = "Bills"
-    case savings = "savings"
-    case food = "Food"
+    case bills
+    case food
+    case grocery
+    case savings
+    case transport
+    case miscellaneous
+    
+    var iconName: String {
+            switch self {
+            case .bills:
+                return "newspaper"
+            case .food:
+                return "fork.knife"
+            case .grocery:
+                return "cart"
+            case .savings:
+                return "banknote"
+            case .transport:
+                return "bus"
+            case .miscellaneous:
+                return "giftcard"
+            }
+        }
 }
 
 nonisolated struct Expense: Identifiable, Codable, Hashable{
