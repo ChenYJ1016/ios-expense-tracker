@@ -33,7 +33,6 @@ class MainTabBarController: UITabBarController {
     private func createNavigationController(for rootViewController: UIViewController) -> UINavigationController {
         // Create navigation controller with this view controller as root
         let navigationController = UINavigationController(rootViewController: rootViewController)
-//        navigationController.navigationBar.prefersLargeTitles = true
 
         return navigationController
     }

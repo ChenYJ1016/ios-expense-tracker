@@ -16,14 +16,32 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
+        let appearance = UINavigationBarAppearance()
+        
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundColor = .systemMint
+        appearance.shadowColor = .clear
+        
+            
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.boldSystemFont(ofSize: 30)]
+        
+
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 17, weight: .semibold)]
+
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+            
+        UINavigationBar.appearance().tintColor = .white
+        
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
         ExpenseDataStore.shared.loadMockDataIfEmpty()
         
         let mainVC = MainTabBarController()
-        let navigationController = UINavigationController(rootViewController: mainVC)
+
         
-        window?.rootViewController = navigationController
+        window?.rootViewController = mainVC
         window?.makeKeyAndVisible()
     }
 

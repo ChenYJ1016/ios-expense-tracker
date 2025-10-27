@@ -39,7 +39,7 @@ class ListViewController: UIViewController {
         return searchController.isActive && (hasText || hasScope || hasDateFilter)
     }
     
-    private var scopeTitles: [String] = ["All"] + ExpenseType.allCases.map { $0.rawValue.capitalized }
+    private var scopeTitles: [String] = ["All"] + ExpenseType.allCases.map { $0.rawValue }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,7 +47,6 @@ class ListViewController: UIViewController {
         // Do any additional setup after loading the view.
         view.backgroundColor = .systemBackground
         title = "Expenses"
-        navigationItem.largeTitleDisplayMode = .always
         
         setupNavigationBar()
         setupSearchController()
@@ -75,7 +74,18 @@ class ListViewController: UIViewController {
         searchController.searchBar.scopeButtonTitles = scopeTitles
         searchController.searchBar.delegate = self
         searchController.searchBar.showsScopeBar = false
+        
         searchController.searchBar.searchTextField.textColor = .white
+        
+        searchController.searchBar.layoutIfNeeded()
+
+        if let segmentedControl = searchController.searchBar.findSegmentedControl() {
+            for (index, type) in ExpenseType.allCases.enumerated() {
+                if let icon = UIImage(systemName: type.iconName) {
+                    segmentedControl.setImage(icon, forSegmentAt: index + 1)
+                }
+            }
+        }
     }
     
     
@@ -104,7 +114,7 @@ class ListViewController: UIViewController {
             dateFilterView.isHidden = true
             
             NSLayoutConstraint.activate([
-                dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                dateFilterView.topAnchor.constraint(equalTo: view.topAnchor),
                 dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
             ])
@@ -138,23 +148,12 @@ class ListViewController: UIViewController {
         }
     
     private func setupNavigationBar(){
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = .brown
         
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.boldSystemFont(ofSize: 30)]
-        appearance.titleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 30, weight: .semibold)]
-        
-        // add button
         addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewExpense))
         let filterIcon = UIImage(systemName: "line.3.horizontal.decrease.circle")
         filterButton = UIBarButtonItem(image: filterIcon, style: .plain, target: self, action: #selector(filterButtonTapped))
         
         navigationItem.rightBarButtonItem = addButton
-    
-        navigationController?.navigationBar.standardAppearance = appearance
-        navigationController?.navigationBar.scrollEdgeAppearance = appearance
-        navigationController?.navigationBar.compactAppearance = appearance
     }
     
     private func setupTableView() {
@@ -204,14 +203,9 @@ class ListViewController: UIViewController {
             UIView.animate(withDuration: 0.3) {
                 self.searchController.searchBar.showsScopeBar.toggle()
                 self.searchController.searchBar.sizeToFit()
-                self.dateFilterView.isHidden.toggle()
             }
-        } else {
-            searchController.isActive = true
-            UIView.animate(withDuration: 0.3) {
-                self.searchController.searchBar.showsScopeBar = true
-                self.searchController.searchBar.sizeToFit()
-            }
+            self.dateFilterView.isHidden.toggle()
+
         }
     }
 }
@@ -256,6 +250,24 @@ extension ListViewController{
             // Apply it to the data source
         dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
         updateBackgroundMessage()
+    }
+}
+
+extension UIView {
+    func findSegmentedControl() -> UISegmentedControl? {
+        for subview in self.subviews {
+            if let segmentedControl = subview as? UISegmentedControl {
+                return segmentedControl
+            }
+        }
+        
+        for subview in self.subviews {
+            if let segmentedControl = subview.findSegmentedControl() {
+                return segmentedControl
+            }
+        }
+        
+        return nil
     }
 }
 
