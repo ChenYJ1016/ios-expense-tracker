@@ -11,47 +11,105 @@ import DGCharts
 
 class DashboardViewController: UIViewController {
 
-    // 2. Create a chart view, like a BarChartView
-        lazy var barChartView: BarChartView = {
-            let chartView = BarChartView()
-            chartView.translatesAutoresizingMaskIntoConstraints = false
-            return chartView
-        }()
+    lazy var pieChartView: PieChartView = {
+        let chartView = PieChartView()
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+        chartView.delegate = self
+        return chartView
+    }()
+    
+    let monthlyExpenses: [String: Double] = [
+        "Groceries": 350.00,
+        "Bills": 1000.00,
+        "Food": 300.00,
+        "Transportation": 200.00,
+        "Misc" : 100.00
+    ]
+    
+    
 
-        override func viewDidLoad() {
-            super.viewDidLoad()
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    
+        setupPieChart()
+        
+    }
+        
+    private func setupPieChart(){
+        view.addSubview(pieChartView)
+        
+        NSLayoutConstraint.activate([
+            pieChartView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            pieChartView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            pieChartView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor)
+        ])
+        setupData()
+    }
+
+    private func setupData(){
+        let dataEntries: [PieChartDataEntry] = monthlyExpenses.map { (category, amount) in
+            return PieChartDataEntry(value: amount, label: category)
             
-            view.backgroundColor = .white
-            view.addSubview(barChartView)
-            
-            // 3. Add constraints
-            NSLayoutConstraint.activate([
-                barChartView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-                barChartView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                barChartView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                barChartView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
-            ])
-            
-            // 4. Set up your chart data
-            setData()
         }
         
-        func setData() {
-            let entries = [
-                BarChartDataEntry(x: 1.0, y: 10.0),
-                BarChartDataEntry(x: 2.0, y: 20.0),
-                BarChartDataEntry(x: 3.0, y: 15.0)
-            ]
-            
-            let dataSet = BarChartDataSet(entries: entries, label: "My Data")
-            let data = BarChartData(dataSet: dataSet)
-            
-            barChartView.data = data
-            
-            // Customize the chart
-            dataSet.colors = [.systemBlue]
-            barChartView.rightAxis.enabled = false
-            barChartView.animate(yAxisDuration: 1.0)
-        }
+        let dataSet = PieChartDataSet(entries: dataEntries, label: "Monthly Expenses")
+        
+        dataSet.colors = ChartColorTemplates.colorful()
+        
+        dataSet.drawValuesEnabled = true
+        dataSet.valueTextColor = .black
+        dataSet.valueFont = .systemFont(ofSize: 12, weight: .semibold)
+        
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = Locale.current
+        dataSet.valueFormatter = DefaultValueFormatter(formatter: formatter)
+        
+        dataSet.valueLinePart1OffsetPercentage = 0.8
+        dataSet.valueLinePart1Length = 0.4
+        dataSet.valueLinePart2Length = 0.4
+        dataSet.yValuePosition = .outsideSlice
+        
+        let data = PieChartData(dataSet: dataSet)
+        
+        pieChartView.drawHoleEnabled = true
+        pieChartView.holeColor = .systemBackground
+        pieChartView.holeRadiusPercent = 0.50
+        
+        let total = monthlyExpenses.values.reduce(0, +)
+        let totalString = formatter.string(from: NSNumber(value: total)) ?? ""
+                pieChartView.centerAttributedText = NSAttributedString(
+                    string: "Total\n\(totalString)",
+                    attributes: [
+                        .font: UIFont.systemFont(ofSize: 16, weight: .bold),
+                        .foregroundColor: UIColor.label
+                    ]
+                )
+        
+        pieChartView.drawEntryLabelsEnabled = true
+        pieChartView.entryLabelColor = .black
+        pieChartView.entryLabelFont = .systemFont(ofSize: 12, weight: .regular)
+        
+        pieChartView.legend.enabled = true
+        pieChartView.legend.orientation = .vertical
+        pieChartView.legend.horizontalAlignment = .center
+        pieChartView.legend.verticalAlignment = .bottom
+        
+        // Animate the chart drawing
+        pieChartView.animate(xAxisDuration: 1.4, easingOption: .easeInOutQuad)
+        
+        // --- 6. Assign the data to the chart ---
+        pieChartView.data = data
+    }
 
+}
+
+extension DashboardViewController: ChartViewDelegate {
+    func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+            // This is called when a user taps on a slice
+            if let pieEntry = entry as? PieChartDataEntry {
+                print("Selected category: \(pieEntry.label ?? "N/A"), Amount: \(pieEntry.value)")
+            }
+        }
 }
