@@ -66,7 +66,9 @@ class DashboardViewController: UIViewController {
         
         let dataSet = PieChartDataSet(entries: dataEntries, label: "Monthly Expenses")
         
-        dataSet.colors = ChartColorTemplates.colorful()
+        var colours = ChartColorTemplates.pastel()
+        colours.append(contentsOf: ChartColorTemplates.liberty())
+        dataSet.colors = colours
         
         dataSet.drawValuesEnabled = true
         dataSet.valueTextColor = .black
@@ -99,7 +101,7 @@ class DashboardViewController: UIViewController {
         let groupedByCategory = Dictionary(grouping: allExpense, by: { $0.type })
         
         let totalByCategory = groupedByCategory.mapValues { expenses in
-            expenses.reduce(0) {$0 + $1.amount}
+            expenses.reduce(Decimal(0)) { $0 + $1.amount }
         }
         
         let pieChartData = totalByCategory.reduce(into: [String: Double]()) { (result, group) in
