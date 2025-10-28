@@ -47,8 +47,6 @@ class ListViewController: UIViewController {
         // Do any additional setup after loading the view.
         view.backgroundColor = .systemBackground
         title = "Expenses"
-        
-        
         setupNavigationBar()
         setupSearchController()
         setupDateFilterView()
@@ -60,6 +58,8 @@ class ListViewController: UIViewController {
         applySnapshot()
         
     }
+    
+    
     
     private func setupSearchController(){
         searchController.searchResultsUpdater = self
@@ -117,6 +117,7 @@ class ListViewController: UIViewController {
                 dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
             ])
+            
         }
     
     @objc private func selectDateTapped() {
@@ -273,14 +274,13 @@ extension UIView {
 extension ListViewController: UITableViewDelegate{
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let tappedExpense = dataSource.itemIdentifier(for: indexPath) else {return}
-        
+                
         let detailVC = ExpenseDetailViewController(expense: tappedExpense)
         detailVC.delegate = self
-        navigationController?.pushViewController(detailVC, animated: true)
+        self.navigationController?.pushViewController(detailVC, animated: true)
     }
     
     func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
-        // TODO: check if expense has image, and adjust height accordingly
         return 85.0
     }
     

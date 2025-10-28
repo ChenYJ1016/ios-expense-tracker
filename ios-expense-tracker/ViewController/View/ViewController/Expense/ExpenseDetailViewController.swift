@@ -1,28 +1,21 @@
-//
-//  ExpenseDetailViewController.swift
-//  ios-expense-tracker
-//
-//  Created by James Chen on 10/10/25.
-//
-
 import UIKit
 
 protocol ExpenseDetailViewControllerDelegate : AnyObject{
     func didFinishEditing(expense: Expense)
 }
 
-class ExpenseDetailViewController: UITableViewController{
+class ExpenseDetailViewController: UITableViewController {
+    
     weak var delegate: ExpenseDetailViewControllerDelegate?
     var expense: Expense
-//    var index: Int
-    var allExpenses: [Expense] = []
-        
+
+    
     private let detailCellIdentifier = "ExpenseDetailCell"
     
     init(expense: Expense) {
-//        self.index = index
         self.expense = expense
         super.init(style: .insetGrouped)
+        
     }
 
     required init?(coder: NSCoder) {
@@ -31,48 +24,55 @@ class ExpenseDetailViewController: UITableViewController{
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        
+        title = expense.name
+
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: detailCellIdentifier)
-                
         self.setupNavigationBar()
+        
+        self.setupHeaderView()
     }
     
-    // MARK: Helper methods
+    
+    // MARK: - UI Setup
+    
     private func setupNavigationBar(){
-        
-        title = "Your expense"
-
-        // add button
         navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "pencil"), style: .plain, target: self, action: #selector(editCurrentExpense))
-        
-
     }
+    
+    private func setupHeaderView() {
+        let headerView = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 100))
+        
+        let amountLabel = UILabel()
+        amountLabel.translatesAutoresizingMaskIntoConstraints = false
+        amountLabel.text = CurrencyFormatter.shared.string(from: expense.amount)
+        amountLabel.font = .systemFont(ofSize: 44, weight: .bold)
+        amountLabel.textColor = .label
+        amountLabel.textAlignment = .center
+        
+        headerView.addSubview(amountLabel)
+        
+        NSLayoutConstraint.activate([
+            amountLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
+            amountLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+            amountLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor, constant: 10)
+        ])
+        
+        tableView.tableHeaderView = headerView
+    }
+    
+    // MARK: - TableView DataSource
     
     override func numberOfSections(in tableView: UITableView) -> Int {
-        // return section num as needed
-        return 2
+        return 1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        switch section{
-            case 0:
-                return 3
-            case 1:
-                return 1
-            default:
-                return 0
-        }
+        return 2
     }
     
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        switch section{
-            case 0:
-                return "Details"
-            case 1:
-                return "Amount"
-            default:
-                return nil
-        }
+        return "Details"
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -80,25 +80,15 @@ class ExpenseDetailViewController: UITableViewController{
         
         var content = cell.defaultContentConfiguration()
         
-            // tuple switching
-            switch (indexPath.section, indexPath.row){
-            case (0, 0):
-                content.text = "Name"
-                content.secondaryText = expense.name
-            case (0, 1):
-                content.text = "Date"
-                content.secondaryText = expense.date.formatted(date: .numeric, time: .omitted)
-
-            case (0, 2):
-                content.text = "Expense Type"
-                content.secondaryText = expense.type.rawValue
-            case (1, 0):
-                content.text = "Amount"
-                content.secondaryText = CurrencyFormatter.shared.string(from: expense.amount)
-                content.secondaryTextProperties.font = .boldSystemFont(ofSize: 17)
-                content.secondaryTextProperties.color = .label
-            default:
-                break
+        switch indexPath.row {
+        case 0:
+            content.text = "Date"
+            content.secondaryText = expense.date.formatted(date: .long, time: .omitted)
+        case 1:
+            content.text = "Expense Type"
+            content.secondaryText = expense.type.rawValue.capitalized
+        default:
+            break
         }
         
         cell.contentConfiguration = content
@@ -107,7 +97,6 @@ class ExpenseDetailViewController: UITableViewController{
     }
     
     @objc private func editCurrentExpense(){
-        // present edit expense data modal
         let editVC = ExpenseFormController()
         editVC.delegate = self
         editVC.expense = self.expense
@@ -116,11 +105,15 @@ class ExpenseDetailViewController: UITableViewController{
     }
 }
 
-extension ExpenseDetailViewController: ExpenseFormControllerDelegate{
+// MARK: - Delegate Conformance
+extension ExpenseDetailViewController: ExpenseFormControllerDelegate {
     func didUpdateExpense(_ expense: Expense) {
         self.expense = expense
+        
+        self.title = expense.name
+        self.setupHeaderView()
+        self.tableView.reloadData()
+        
         delegate?.didFinishEditing(expense: expense)
-        tableView.reloadData()
     }
 }
-
