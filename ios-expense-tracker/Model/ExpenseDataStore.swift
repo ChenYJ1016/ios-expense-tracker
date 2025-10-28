@@ -27,7 +27,7 @@ class ExpenseDataStore {
         }
         return expenses
     }
-
+    
     func saveExpenses(_ expenses: [Expense]) {
         guard let data = try? JSONEncoder().encode(expenses) else {
             print("Error: Could not encode expenses.")

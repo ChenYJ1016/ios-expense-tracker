@@ -11,6 +11,9 @@ import DGCharts
 
 class DashboardViewController: UIViewController {
 
+    private let store = ExpenseDataStore.shared
+    private var expensesByCategory: [String: Double] = [:]
+
     lazy var pieChartView: PieChartView = {
         let chartView = PieChartView()
         chartView.translatesAutoresizingMaskIntoConstraints = false
@@ -18,18 +21,11 @@ class DashboardViewController: UIViewController {
         return chartView
     }()
     
-    let monthlyExpenses: [String: Double] = [
-        "Groceries": 350.00,
-        "Bills": 1000.00,
-        "Food": 300.00,
-        "Transport": 200.00,
-        "Misc" : 100.00
-    ]
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Overview"
         
+        expensesByCategory = getExpensesGroupedByCategory()
         setupPieChart()
         
     }
@@ -37,19 +33,35 @@ class DashboardViewController: UIViewController {
     private func setupPieChart(){
         view.addSubview(pieChartView)
         
+        pieChartView.drawHoleEnabled = true
+        pieChartView.holeColor = .systemBackground
+        pieChartView.holeRadiusPercent = 0.50
+        
+        pieChartView.drawEntryLabelsEnabled = true
+        pieChartView.entryLabelColor = .black
+        pieChartView.entryLabelFont = .systemFont(ofSize: 12, weight: .regular)
+        
+        pieChartView.legend.enabled = true
+        pieChartView.legend.orientation = .vertical
+        pieChartView.legend.horizontalAlignment = .right
+        pieChartView.legend.verticalAlignment = .bottom
+        
+        pieChartView.animate(xAxisDuration: 1.4, easingOption: .easeInOutQuad)
+        pieChartView.translatesAutoresizingMaskIntoConstraints = false
+        
         NSLayoutConstraint.activate([
             pieChartView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            pieChartView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            pieChartView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            pieChartView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            pieChartView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor)
         ])
-        setupData()
+        
+        configureData()
     }
 
-    private func setupData(){
-        let dataEntries: [PieChartDataEntry] = monthlyExpenses.map { (category, amount) in
+    private func configureData(){
+        let dataEntries: [PieChartDataEntry] = expensesByCategory.map { (category, amount) in
             return PieChartDataEntry(value: amount, label: category)
-            
         }
         
         let dataSet = PieChartDataSet(entries: dataEntries, label: "Monthly Expenses")
@@ -67,11 +79,7 @@ class DashboardViewController: UIViewController {
         
         let data = PieChartData(dataSet: dataSet)
         
-        pieChartView.drawHoleEnabled = true
-        pieChartView.holeColor = .systemBackground
-        pieChartView.holeRadiusPercent = 0.50
-        
-        let total = monthlyExpenses.values.reduce(0, +)
+        let total = expensesByCategory.values.reduce(0, +)
 
         let totalString = CurrencyFormatter.shared.string(from: Decimal(total))
         pieChartView.centerAttributedText = NSAttributedString(
@@ -82,25 +90,32 @@ class DashboardViewController: UIViewController {
             ]
         )
         
-        pieChartView.drawEntryLabelsEnabled = true
-        pieChartView.entryLabelColor = .black
-        pieChartView.entryLabelFont = .systemFont(ofSize: 12, weight: .regular)
-        
-        pieChartView.legend.enabled = true
-        pieChartView.legend.orientation = .vertical
-        pieChartView.legend.horizontalAlignment = .right
-        pieChartView.legend.verticalAlignment = .bottom
-        
-        pieChartView.animate(xAxisDuration: 1.4, easingOption: .easeInOutQuad)
-        
         pieChartView.data = data
+    }
+    
+    private func getExpensesGroupedByCategory() -> [String: Double]{
+        let allExpense = store.loadExpenses()
+        
+        let groupedByCategory = Dictionary(grouping: allExpense, by: { $0.type })
+        
+        let totalByCategory = groupedByCategory.mapValues { expenses in
+            expenses.reduce(0) {$0 + $1.amount}
+        }
+        
+        let pieChartData = totalByCategory.reduce(into: [String: Double]()) { (result, group) in
+            let categoryName = group.key.rawValue
+            let totalAmount = group.value
+            result[categoryName] = (totalAmount as NSDecimalNumber).doubleValue
+        }
+        
+        return pieChartData
+        
     }
 
 }
 
 extension DashboardViewController: ChartViewDelegate {
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
-            // This is called when a user taps on a slice
             if let pieEntry = entry as? PieChartDataEntry {
                 print("Selected category: \(pieEntry.label ?? "N/A"), Amount: \(pieEntry.value)")
             }
