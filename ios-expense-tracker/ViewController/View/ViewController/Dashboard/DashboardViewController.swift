@@ -51,7 +51,6 @@ class DashboardViewController: UIViewController {
     }
     
     deinit {
-            // This cleans up the observer when the view controller is destroyed
             NotificationCenter.default.removeObserver(
                 self,
                 name: .didUpdateExpenses,
@@ -106,8 +105,8 @@ class DashboardViewController: UIViewController {
             dataSet.valueFont = .systemFont(ofSize: 10, weight: .semibold)
                 
             dataSet.valueLinePart1OffsetPercentage = 0.8
-            dataSet.valueLinePart1Length = 0.3
-            dataSet.valueLinePart2Length = 0.3
+            dataSet.valueLinePart1Length = 0.5
+            dataSet.valueLinePart2Length = 0.6
             dataSet.yValuePosition = .outsideSlice
                 
             dataSet.valueFormatter = PieChartCategoryFormatter()
@@ -138,8 +137,16 @@ class DashboardViewController: UIViewController {
 
 extension DashboardViewController: ChartViewDelegate {
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
-            if let pieEntry = entry as? PieChartDataEntry {
-                print("Selected category: \(pieEntry.label ?? "N/A"), Amount: \(pieEntry.value)")
-            }
+        guard let pieEntry = entry as? PieChartDataEntry, let categoryString = pieEntry.label else { return }
+        guard let category = ExpenseType(rawValue: categoryString) else { return }
+        
+        let expenseForCategory = store.loadExpenses(by: category)
+        
+        let detailVC = CategoryDetailViewController()
+        
+        detailVC.categoryName = categoryString
+        detailVC.expenses = expenseForCategory
+        
+        navigationController?.pushViewController(detailVC, animated: true)
         }
 }

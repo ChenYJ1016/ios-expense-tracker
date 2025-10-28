@@ -28,6 +28,11 @@ class ExpenseDataStore {
         return expenses
     }
     
+    func loadExpenses(by category: ExpenseType) ->  [Expense] {
+        let allExpenses = self.loadExpenses()
+        return allExpenses.filter { $0.type == category }
+    }
+    
     func saveExpenses(_ expenses: [Expense]) {
         guard let data = try? JSONEncoder().encode(expenses) else {
             print("Error: Could not encode expenses.")

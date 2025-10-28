@@ -12,7 +12,7 @@ nonisolated enum ExpenseType: String, CaseIterable, Codable, Hashable{
     case grocery = "Groceries"
     case savings = "Savings"
     case transport = "Transportation"
-    case misc = "Miscellaneous"
+    case misc = "Misc."
     
     var iconName: String {
             switch self {

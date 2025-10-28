@@ -274,7 +274,7 @@ extension ListViewController: UITableViewDelegate{
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let tappedExpense = dataSource.itemIdentifier(for: indexPath) else {return}
         
-        let detailVC = ExpenseDetailViewController(expense: tappedExpense, index: indexPath.row)
+        let detailVC = ExpenseDetailViewController(expense: tappedExpense)
         detailVC.delegate = self
         navigationController?.pushViewController(detailVC, animated: true)
     }

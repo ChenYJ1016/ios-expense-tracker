@@ -14,13 +14,13 @@ protocol ExpenseDetailViewControllerDelegate : AnyObject{
 class ExpenseDetailViewController: UITableViewController{
     weak var delegate: ExpenseDetailViewControllerDelegate?
     var expense: Expense
-    var index: Int
+//    var index: Int
     var allExpenses: [Expense] = []
         
     private let detailCellIdentifier = "ExpenseDetailCell"
     
-    init(expense: Expense, index: Int) {
-        self.index = index
+    init(expense: Expense) {
+//        self.index = index
         self.expense = expense
         super.init(style: .insetGrouped)
     }
