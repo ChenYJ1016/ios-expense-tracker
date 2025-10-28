@@ -36,6 +36,7 @@ class ExpenseDataStore {
 
         do {
             try data.write(to: fileURL)
+            NotificationCenter.default.post(name: .didUpdateExpenses, object: nil)
         } catch {
             // This 'catch' block will run if the write operation fails
             print("Error saving expenses: \(error.localizedDescription)")

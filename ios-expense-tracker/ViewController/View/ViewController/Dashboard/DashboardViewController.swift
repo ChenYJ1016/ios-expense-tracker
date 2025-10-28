@@ -15,41 +15,56 @@ class DashboardViewController: UIViewController {
     private var expensesByCategory: [String: Double] = [:]
 
     lazy var pieChartView: PieChartView = {
-        let chartView = PieChartView()
-        chartView.translatesAutoresizingMaskIntoConstraints = false
-        chartView.delegate = self
-        return chartView
-    }()
+            let chartView = PieChartView()
+            chartView.translatesAutoresizingMaskIntoConstraints = false
+            chartView.delegate = self
+        
+            chartView.drawHoleEnabled = true
+            chartView.holeColor = .systemBackground
+            chartView.holeRadiusPercent = 0.50
+            
+            chartView.drawEntryLabelsEnabled = false
+            
+            chartView.legend.enabled = true
+            chartView.legend.orientation = .vertical
+            chartView.legend.horizontalAlignment = .right
+            chartView.legend.verticalAlignment = .bottom
+            
+            chartView.setExtraOffsets(left: 32, top: 0, right: 32, bottom: 0)
+            return chartView
+        }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Overview"
         
-        expensesByCategory = getExpensesGroupedByCategory()
-        setupPieChart()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(expenseDataDidChange),
+            name: .didUpdateExpenses,
+            object: nil
+        )
         
+        setupPieChart()
+        refreshChartData(animated: true)
+        
+    }
+    
+    deinit {
+            // This cleans up the observer when the view controller is destroyed
+            NotificationCenter.default.removeObserver(
+                self,
+                name: .didUpdateExpenses,
+                object: nil
+            )
+        }
+    
+    @objc private func expenseDataDidChange(){
+        refreshChartData(animated: true)
     }
         
     private func setupPieChart(){
         view.addSubview(pieChartView)
-        
-        pieChartView.drawHoleEnabled = true
-        pieChartView.holeColor = .systemBackground
-        pieChartView.holeRadiusPercent = 0.50
-        
-        pieChartView.drawEntryLabelsEnabled = false
-        pieChartView.entryLabelColor = .black
-        pieChartView.entryLabelFont = .systemFont(ofSize: 12, weight: .regular)
-        
-        pieChartView.legend.enabled = true
-        pieChartView.legend.orientation = .vertical
-        pieChartView.legend.horizontalAlignment = .right
-        pieChartView.legend.verticalAlignment = .bottom
-        
-        pieChartView.animate(xAxisDuration: 1.4, easingOption: .easeInOutQuad)
-        pieChartView.translatesAutoresizingMaskIntoConstraints = false
-        
-        pieChartView.setExtraOffsets(left: 32, top: 0, right: 32, bottom: 0)
         
         NSLayoutConstraint.activate([
             pieChartView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -58,66 +73,66 @@ class DashboardViewController: UIViewController {
             pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor)
         ])
         
-        configureData()
     }
 
-    private func configureData(){
-        let dataEntries: [PieChartDataEntry] = expensesByCategory.map { (category, amount) in
-            return PieChartDataEntry(value: amount, label: category)
-        }
-        
-        let dataSet = PieChartDataSet(entries: dataEntries, label: "Monthly Expenses")
-        
-        var colours = ChartColorTemplates.pastel()
-        colours.append(contentsOf: ChartColorTemplates.liberty())
-        dataSet.colors = colours
-        
-        dataSet.drawValuesEnabled = true
-        dataSet.valueTextColor = .black
-        dataSet.valueFont = .systemFont(ofSize: 12, weight: .semibold)
-        
-        dataSet.valueLinePart1OffsetPercentage = 0.8
-        dataSet.valueLinePart1Length = 0.4
-        dataSet.valueLinePart2Length = 0.4
-        dataSet.yValuePosition = .outsideSlice
-        
-        dataSet.valueFormatter = PieChartCategoryFormatter()
-        let data = PieChartData(dataSet: dataSet)
-        
-        let total = expensesByCategory.values.reduce(0, +)
-
-        let totalString = CurrencyFormatter.shared.string(from: Decimal(total))
-        pieChartView.centerAttributedText = NSAttributedString(
-            string: "Total\n\(totalString)",
-            attributes: [
-                .font: UIFont.systemFont(ofSize: 16, weight: .bold),
+    private func refreshChartData(animated: Bool) {
+            
+            let allExpense = store.loadExpenses()
+            let groupedByCategory = Dictionary(grouping: allExpense, by: { $0.type })
+            
+            let totalByCategory = groupedByCategory.mapValues { expenses in
+                expenses.reduce(Decimal(0)) { $0 + $1.amount }
+            }
+            
+            self.expensesByCategory = totalByCategory.reduce(into: [String: Double]()) { (result, group) in
+                let categoryName = group.key.rawValue
+                let totalAmount = group.value
+                result[categoryName] = (totalAmount as NSDecimalNumber).doubleValue
+            }
+            
+            let dataEntries: [PieChartDataEntry] = expensesByCategory.map { (category, amount) in
+                return PieChartDataEntry(value: amount, label: category)
+            }
+                
+            let dataSet = PieChartDataSet(entries: dataEntries)
+                
+            var colours = ChartColorTemplates.pastel()
+            colours.append(contentsOf: ChartColorTemplates.liberty())
+            colours.append(contentsOf: ChartColorTemplates.joyful())
+            dataSet.colors = colours
+                
+            dataSet.drawValuesEnabled = true
+            dataSet.valueTextColor = .label
+            dataSet.valueFont = .systemFont(ofSize: 10, weight: .semibold)
+                
+            dataSet.valueLinePart1OffsetPercentage = 0.8
+            dataSet.valueLinePart1Length = 0.3
+            dataSet.valueLinePart2Length = 0.3
+            dataSet.yValuePosition = .outsideSlice
+                
+            dataSet.valueFormatter = PieChartCategoryFormatter()
+            
+            let data = PieChartData(dataSet: dataSet)
+                
+            let total = expensesByCategory.values.reduce(0, +)
+            let totalString = CurrencyFormatter.shared.string(from: Decimal(total))
+            
+            let centerText = NSMutableAttributedString(string: "Total\n", attributes: [
+                .font: UIFont.systemFont(ofSize: 14, weight: .regular),
+                .foregroundColor: UIColor.secondaryLabel
+            ])
+            centerText.append(NSAttributedString(string: totalString, attributes: [
+                .font: UIFont.systemFont(ofSize: 18, weight: .bold),
                 .foregroundColor: UIColor.label
-            ]
-        )
-        
-        
-        
-        pieChartView.data = data
-    }
-    
-    private func getExpensesGroupedByCategory() -> [String: Double]{
-        let allExpense = store.loadExpenses()
-        
-        let groupedByCategory = Dictionary(grouping: allExpense, by: { $0.type })
-        
-        let totalByCategory = groupedByCategory.mapValues { expenses in
-            expenses.reduce(Decimal(0)) { $0 + $1.amount }
+            ]))
+            pieChartView.centerAttributedText = centerText
+                
+            pieChartView.data = data
+            
+            if animated {
+                pieChartView.animate(xAxisDuration: 1.0, easingOption: .easeOutQuad)
+            }
         }
-        
-        let pieChartData = totalByCategory.reduce(into: [String: Double]()) { (result, group) in
-            let categoryName = group.key.rawValue
-            let totalAmount = group.value
-            result[categoryName] = (totalAmount as NSDecimalNumber).doubleValue
-        }
-        
-        return pieChartData
-        
-    }
 
 }
 
