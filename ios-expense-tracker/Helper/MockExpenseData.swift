@@ -54,7 +54,7 @@ struct MockExpenseData {
         
         Expense(name: "Cinema Tickets",
                 date: date(year: 2025, month: 10, day: 10),
-                type: .miscellaneous,
+                type: .misc,
                 amount: 32.00),
         
         Expense(name: "Bus to City",
@@ -84,7 +84,7 @@ struct MockExpenseData {
         
         Expense(name: "New Notebook",
                 date: date(year: 2025, month: 10, day: 23),
-                type: .miscellaneous,
+                type: .misc,
                 amount: 15.00),
         
         // --- Added More Data ---
@@ -106,7 +106,7 @@ struct MockExpenseData {
                 
         Expense(name: "Halloween Party Supplies",
                 date: date(year: 2025, month: 10, day: 30),
-                type: .miscellaneous,
+                type: .misc,
                 amount: 55.20),
         
         Expense(name: "Monthly Train Pass",
@@ -131,7 +131,7 @@ struct MockExpenseData {
         
         Expense(name: "Gym Membership",
                 date: date(year: 2025, month: 11, day: 6),
-                type: .miscellaneous,
+                type: .misc,
                 amount: 75.00),
         
         Expense(name: "Pizza Night",

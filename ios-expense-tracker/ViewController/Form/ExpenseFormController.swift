@@ -27,7 +27,7 @@ class ExpenseFormController: UITableViewController {
     private var expenseName: String = ""
     private var expenseAmount: Decimal = 0.0
     private var expenseDate: Date = Date()
-    private var expenseType: ExpenseType = .miscellaneous
+    private var expenseType: ExpenseType = .misc
     
     override func viewDidLoad() {
         super.viewDidLoad()

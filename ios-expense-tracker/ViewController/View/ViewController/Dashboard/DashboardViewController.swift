@@ -37,7 +37,7 @@ class DashboardViewController: UIViewController {
         pieChartView.holeColor = .systemBackground
         pieChartView.holeRadiusPercent = 0.50
         
-        pieChartView.drawEntryLabelsEnabled = true
+        pieChartView.drawEntryLabelsEnabled = false
         pieChartView.entryLabelColor = .black
         pieChartView.entryLabelFont = .systemFont(ofSize: 12, weight: .regular)
         
@@ -49,8 +49,10 @@ class DashboardViewController: UIViewController {
         pieChartView.animate(xAxisDuration: 1.4, easingOption: .easeInOutQuad)
         pieChartView.translatesAutoresizingMaskIntoConstraints = false
         
+        pieChartView.setExtraOffsets(left: 32, top: 0, right: 32, bottom: 0)
+        
         NSLayoutConstraint.activate([
-            pieChartView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            pieChartView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             pieChartView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             pieChartView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor)
@@ -79,6 +81,7 @@ class DashboardViewController: UIViewController {
         dataSet.valueLinePart2Length = 0.4
         dataSet.yValuePosition = .outsideSlice
         
+        dataSet.valueFormatter = PieChartCategoryFormatter()
         let data = PieChartData(dataSet: dataSet)
         
         let total = expensesByCategory.values.reduce(0, +)
@@ -91,6 +94,8 @@ class DashboardViewController: UIViewController {
                 .foregroundColor: UIColor.label
             ]
         )
+        
+        
         
         pieChartView.data = data
     }
