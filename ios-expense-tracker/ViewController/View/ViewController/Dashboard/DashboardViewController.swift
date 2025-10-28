@@ -22,15 +22,14 @@ class DashboardViewController: UIViewController {
         "Groceries": 350.00,
         "Bills": 1000.00,
         "Food": 300.00,
-        "Transportation": 200.00,
+        "Transport": 200.00,
         "Misc" : 100.00
     ]
     
-    
-
     override func viewDidLoad() {
         super.viewDidLoad()
-    
+        title = "Overview"
+        
         setupPieChart()
         
     }
@@ -61,11 +60,6 @@ class DashboardViewController: UIViewController {
         dataSet.valueTextColor = .black
         dataSet.valueFont = .systemFont(ofSize: 12, weight: .semibold)
         
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = Locale.current
-        dataSet.valueFormatter = DefaultValueFormatter(formatter: formatter)
-        
         dataSet.valueLinePart1OffsetPercentage = 0.8
         dataSet.valueLinePart1Length = 0.4
         dataSet.valueLinePart2Length = 0.4
@@ -78,14 +72,15 @@ class DashboardViewController: UIViewController {
         pieChartView.holeRadiusPercent = 0.50
         
         let total = monthlyExpenses.values.reduce(0, +)
-        let totalString = formatter.string(from: NSNumber(value: total)) ?? ""
-                pieChartView.centerAttributedText = NSAttributedString(
-                    string: "Total\n\(totalString)",
-                    attributes: [
-                        .font: UIFont.systemFont(ofSize: 16, weight: .bold),
-                        .foregroundColor: UIColor.label
-                    ]
-                )
+
+        let totalString = CurrencyFormatter.shared.string(from: Decimal(total))
+        pieChartView.centerAttributedText = NSAttributedString(
+            string: "Total\n\(totalString)",
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 16, weight: .bold),
+                .foregroundColor: UIColor.label
+            ]
+        )
         
         pieChartView.drawEntryLabelsEnabled = true
         pieChartView.entryLabelColor = .black
@@ -93,13 +88,11 @@ class DashboardViewController: UIViewController {
         
         pieChartView.legend.enabled = true
         pieChartView.legend.orientation = .vertical
-        pieChartView.legend.horizontalAlignment = .center
+        pieChartView.legend.horizontalAlignment = .right
         pieChartView.legend.verticalAlignment = .bottom
         
-        // Animate the chart drawing
         pieChartView.animate(xAxisDuration: 1.4, easingOption: .easeInOutQuad)
         
-        // --- 6. Assign the data to the chart ---
         pieChartView.data = data
     }
 

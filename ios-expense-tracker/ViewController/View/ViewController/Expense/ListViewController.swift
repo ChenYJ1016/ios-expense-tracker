@@ -48,6 +48,7 @@ class ListViewController: UIViewController {
         view.backgroundColor = .systemBackground
         title = "Expenses"
         
+        
         setupNavigationBar()
         setupSearchController()
         setupDateFilterView()
@@ -74,9 +75,7 @@ class ListViewController: UIViewController {
         searchController.searchBar.scopeButtonTitles = scopeTitles
         searchController.searchBar.delegate = self
         searchController.searchBar.showsScopeBar = false
-        
-        searchController.searchBar.searchTextField.textColor = .white
-        
+                
         searchController.searchBar.layoutIfNeeded()
 
         if let segmentedControl = searchController.searchBar.findSegmentedControl() {
