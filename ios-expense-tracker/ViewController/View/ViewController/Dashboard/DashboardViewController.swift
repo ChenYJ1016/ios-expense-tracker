@@ -58,6 +58,15 @@ class DashboardViewController: UIViewController {
         return pv
     }()
     
+    private lazy var editBudgetButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setImage(UIImage(systemName: "pencil.line"), for: .normal)
+        button.addAction(UIAction(handler: { _ in
+            self.editBudgetTapped()
+        }), for: .touchUpInside)
+        return button
+    }()
     
     // --- Card 3: Spending Components ---
     private lazy var timeRangeSegmentedControl: UISegmentedControl = {
@@ -176,12 +185,21 @@ class DashboardViewController: UIViewController {
         titleLabel.font = .systemFont(ofSize: 12, weight: .bold)
         titleLabel.textColor = .secondaryLabel
         
-        let vStack = UIStackView(arrangedSubviews: [
+        let hStack = UIStackView(arrangedSubviews: [
             titleLabel,
+            editBudgetButton,
+        ])
+        let vStack = UIStackView(arrangedSubviews: [
+            hStack,
             budgetAmountLeftLabel,
             budgetSpentLabel,
-            budgetProgressBar
+            budgetProgressBar,
         ])
+        
+        hStack.translatesAutoresizingMaskIntoConstraints = false
+        hStack.axis = .horizontal
+        hStack.distribution = .equalSpacing
+        
         vStack.translatesAutoresizingMaskIntoConstraints = false
         vStack.axis = .vertical
         vStack.spacing = 8
@@ -373,7 +391,7 @@ class DashboardViewController: UIViewController {
     /// Reloads all data for all dashboard cards
     @objc private func refreshDashboardData(animated: Bool) {
         refreshBudgetCardData()
-        // We will add refreshSavingGoalsCardData() in Step 2
+        //refreshSavingGoalsCardData()
         refreshSpendingCardData(animated: animated)
     }
 
@@ -385,6 +403,16 @@ class DashboardViewController: UIViewController {
     /// Called when the segmented control (in Card 3) changes
     @objc private func timeRangeDidChange() {
         refreshSpendingCardData(animated: true)
+    }
+    
+    private func editBudgetTapped(){
+        // TODO: navigate to form
+        let budgetVC = BudgetFormController()
+        
+        budgetVC.delegate = self
+        
+        let navController = UINavigationController(rootViewController: budgetVC)
+        present(navController, animated: true, completion: nil)
     }
     
     // ---
@@ -423,5 +451,11 @@ extension DashboardViewController: ChartViewDelegate {
         detailVC.expenses = expenseForCategory
         
         navigationController?.pushViewController(detailVC, animated: true)
+    }
+}
+
+extension DashboardViewController: BudgetFormControllerDelegate{
+    func budgetFormController(didSave budget: Budget) {
+        <#code#>
     }
 }
