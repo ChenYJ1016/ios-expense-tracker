@@ -258,12 +258,12 @@ class BudgetFormController: UIViewController {
         // Add target for the segmented control
         formSegmentedControl.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
         
-        // TODO: Add target for saveButton
+        // Add target for saveButton
          saveButton.addTarget(self, action: #selector(savedTapped), for: .touchUpInside)
         
-        // TODO: Add targets for text fields to update the 'Remaining' label
-        // incomeTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
-        // savingGoalTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
+        // Add targets for text fields to update the 'Remaining' label
+         incomeTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
+         savingGoalTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
     }
     
     @objc private func segmentChanged() {
@@ -276,6 +276,16 @@ class BudgetFormController: UIViewController {
             // This tells the stack view to re-layout
             self.contentStackView.layoutIfNeeded()
         }
+    }
+    
+    @objc private func updateRemainingBalance() {
+        guard let incomeText = incomeTextField.text, !incomeText.isEmpty, let income = Decimal(string: incomeText), let goalText = savingGoalTextField.text, !goalText.isEmpty, let goal = Decimal(string: goalText) else {
+            remainingAmountLabel.text = "N/A"
+            return
+        }
+        
+        let remainingBalance = income - goal
+        remainingAmountLabel.text = CurrencyFormatter.shared.string(from: remainingBalance) 
     }
     
     @objc private func savedTapped(){

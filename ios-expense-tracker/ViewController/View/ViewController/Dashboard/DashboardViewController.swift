@@ -10,7 +10,8 @@ import DGCharts
 
 class DashboardViewController: UIViewController {
 
-    private let store = ExpenseDataStore.shared
+    private let expenseStore = ExpenseDataStore.shared
+    private let budgetStore = BudgetDataStore.shared
     
     private var expensesByCategory: [String: Double] = [:]
     private var expensesForChart: [Expense] = []
@@ -115,6 +116,7 @@ class DashboardViewController: UIViewController {
         )
         
         setupLayout()
+        loadSavedData()
         refreshDashboardData(animated: false)
     }
     
@@ -219,45 +221,53 @@ class DashboardViewController: UIViewController {
     }
     
     private func refreshBudgetCardData() {
-        // --- TODO: MOCK DATA ---
 
-        let monthlyIncome: Decimal = 5000.00
-        let monthlySavingGoal: Decimal = 1000.00
-        
-        let spendableBudget = monthlyIncome - monthlySavingGoal
-        
-        let allExpenses = store.loadExpenses()
-        
-        let calendar = Calendar.current
-        let now = Date()
-        guard let startOfCurrentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
-            return
-        }
-        let currentMonthExpenses = allExpenses.filter { $0.date >= startOfCurrentMonth }
-        
+        if let budget = budgetStore.loadBudget() {
+            let monthlyIncome = budget.income
+            let monthlySavingGoal = budget.savingGoal
+            let spendableBudget = monthlyIncome - monthlySavingGoal
+            
+            let allExpenses = expenseStore.loadExpenses()
+            
+            let calendar = Calendar.current
+            let now = Date()
+            guard let startOfCurrentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
+                return
+            }
+            let currentMonthExpenses = allExpenses.filter { $0.date >= startOfCurrentMonth }
+            
+            let currentSpending = currentMonthExpenses
+                .filter { $0.type != .savings }
+                .reduce(Decimal(0)) { $0 + $1.amount }
+            
+            let amountLeft = spendableBudget - currentSpending
+            
+            var progress: Float = 0.0
+            if spendableBudget > 0 {
 
-        let currentSpending = currentMonthExpenses
-            .filter { $0.type != .savings }
-            .reduce(Decimal(0)) { $0 + $1.amount }
-        
-        let amountLeft = spendableBudget - currentSpending
-        
-        var progress: Float = 0.0
-        if spendableBudget > 0 {
-            progress = (NSDecimalNumber(decimal: currentSpending).floatValue) / (NSDecimalNumber(decimal: spendableBudget).floatValue)
-        }
-        
-        if progress > 1.0 {
-            budgetProgressBar.progressTintColor = .systemRed
-        } else if progress > 0.8 {
-            budgetProgressBar.progressTintColor = .systemOrange
+                progress = (NSDecimalNumber(decimal: currentSpending).floatValue) / (NSDecimalNumber(decimal: spendableBudget).floatValue)
+            }
+            
+            if progress > 1.0 {
+                budgetProgressBar.progressTintColor = .systemRed
+            } else if progress > 0.8 {
+                budgetProgressBar.progressTintColor = .systemOrange
+            } else {
+                budgetProgressBar.progressTintColor = .systemGreen
+            }
+            
+
+            budgetAmountLeftLabel.text = "\(CurrencyFormatter.shared.string(from: amountLeft)) Left"
+            budgetSpentLabel.text = "Spent \(CurrencyFormatter.shared.string(from: currentSpending)) of \(CurrencyFormatter.shared.string(from: spendableBudget))"
+            budgetProgressBar.setProgress(progress, animated: true)
+            
         } else {
-            budgetProgressBar.progressTintColor = .systemGreen
+ 
+            budgetAmountLeftLabel.text = "$0.00 Left"
+            budgetSpentLabel.text = "Tap the ✏️ to set your budget"
+            budgetProgressBar.setProgress(0, animated: false)
+            budgetProgressBar.progressTintColor = .systemGray
         }
-        
-        budgetAmountLeftLabel.text = "\(CurrencyFormatter.shared.string(from: amountLeft)) Left"
-        budgetSpentLabel.text = "Spent \(CurrencyFormatter.shared.string(from: currentSpending)) of \(CurrencyFormatter.shared.string(from: spendableBudget))"
-        budgetProgressBar.setProgress(progress, animated: true)
     }
     
     private func createSpendingBreakdownCard() -> UIView {
@@ -293,7 +303,7 @@ class DashboardViewController: UIViewController {
     
     private func refreshSpendingCardData(animated: Bool) {
         
-        let allExpenses = store.loadExpenses()
+        let allExpenses = expenseStore.loadExpenses()
         let selectedRange = timeRangeSegmentedControl.selectedSegmentIndex
         
         let calendar = Calendar.current
@@ -415,6 +425,14 @@ class DashboardViewController: UIViewController {
         present(navController, animated: true, completion: nil)
     }
     
+    private func loadSavedData(){
+        if budgetStore.loadBudget() != nil{
+            print("Budget loaded from dataStore")
+        }else {
+            print("no budget retrieved from store")
+        }
+    }
+    
     // ---
     // MARK: - Helper Functions
     // ---
@@ -456,6 +474,7 @@ extension DashboardViewController: ChartViewDelegate {
 
 extension DashboardViewController: BudgetFormControllerDelegate{
     func budgetFormController(didSave budget: Budget) {
-        <#code#>
+        budgetStore.saveBudget(budget)
+        refreshDashboardData(animated: true)
     }
 }

@@ -37,6 +37,7 @@ class BudgetDataStore{
         
         do{
             try data.write(to: fileURL)
+            print("Budget saved successfully")
         }catch{
             print("Error saving budget: \(error.localizedDescription)")
         }
