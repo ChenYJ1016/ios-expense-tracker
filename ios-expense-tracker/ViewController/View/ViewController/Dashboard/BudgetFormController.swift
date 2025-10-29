@@ -15,6 +15,7 @@ class BudgetFormController: UIViewController {
 
     // MARK: - Properties
     
+    var onTextChanged: ((String?) -> Void)?
     private var incomeTextField: UITextField!
     private var savingGoalTextField: UITextField!
     private var remainingAmountLabel: UILabel!
@@ -157,12 +158,13 @@ class BudgetFormController: UIViewController {
         
         // Create and configure form fields
         let incomeTitle = createTitleLabel(with: "Your Monthly Income")
-        incomeTextField = createTextField(placeholder: "e.g., 3000", keyboardType: .decimalPad)
+        incomeTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
+        incomeTextField.delegate = self
         
-        let goalTitle = createTitleLabel(with: "Overall Saving Goal")
-        savingGoalTextField = createTextField(placeholder: "e.g., 500", keyboardType: .decimalPad)
+        let goalTitle = createTitleLabel(with: "Saving goal this month")
+        savingGoalTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
         
-        let remainingTitle = createTitleLabel(with: "Remaining for Spending")
+        let remainingTitle = createTitleLabel(with: "Your budget for this month")
         remainingAmountLabel = createAmountLabel(with: "$0.00") // Default value
         
         // Add components to the stack view
@@ -356,6 +358,7 @@ class BudgetFormController: UIViewController {
         label.textColor = .systemGreen
         return label
     }
+  
 }
 
 // MARK: - UITableView Delegate & DataSource
@@ -388,7 +391,17 @@ extension BudgetFormController: UITableViewDelegate, UITableViewDataSource {
     // TODO: Add swipe-to-delete functionality
 }
 
-#Preview {
-    BudgetFormController()
-    
+extension BudgetFormController: UITextFieldDelegate{
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        
+        // format the textfield value
+        guard let result = CurrencyFormatter.shared.formattedReplacement(currentText: textField.text ?? "", range: range, replacement: string) else{
+            return false
+        }
+        
+        textField.text = result.formatted
+
+        return false
+        
+    }
 }
