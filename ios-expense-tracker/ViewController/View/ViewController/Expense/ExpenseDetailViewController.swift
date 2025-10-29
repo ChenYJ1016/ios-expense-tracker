@@ -33,7 +33,6 @@ class ExpenseDetailViewController: UITableViewController {
         self.setupHeaderView()
     }
     
-    
     // MARK: - UI Setup
     
     private func setupNavigationBar(){

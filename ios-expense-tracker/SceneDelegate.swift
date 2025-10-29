@@ -39,6 +39,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         let mainVC = MainTabBarController()
         
+        window?.backgroundColor = .systemGroupedBackground
         window?.rootViewController = mainVC
         window?.makeKeyAndVisible()
     }
