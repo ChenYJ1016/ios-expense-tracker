@@ -111,13 +111,15 @@ class BudgetFormController: UIViewController {
         // Create and configure form fields
         let incomeTitle = createTitleLabel(with: "Your Monthly Income")
         incomeTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
-        incomeTextField.delegate = self
+//        incomeTextField.delegate = self
         
         let goalTitle = createTitleLabel(with: "Saving goal this month")
         savingGoalTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
+//        savingGoalTextField.delegate = self
         
         let remainingTitle = createTitleLabel(with: "Your budget for this month")
         remainingAmountLabel = createAmountLabel(with: "$0.00")
+        
         
         // Add components to the stack view
         stackView.addArrangedSubview(incomeTitle)

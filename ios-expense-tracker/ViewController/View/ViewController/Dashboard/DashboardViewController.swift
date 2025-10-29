@@ -12,6 +12,7 @@ class DashboardViewController: UIViewController {
 
     private let expenseStore = ExpenseDataStore.shared
     private let budgetStore = BudgetDataStore.shared
+    private let goalsStore = SavingGoalDataStore.shared
     
     private var expensesByCategory: [String: Double] = [:]
     private var expensesForChart: [Expense] = []
@@ -69,6 +70,25 @@ class DashboardViewController: UIViewController {
         return button
     }()
     
+    // --- Card 2: Saving Goals Components ---
+    private lazy var savingGoalsStackView: UIStackView = {
+        let sv = UIStackView()
+        sv.translatesAutoresizingMaskIntoConstraints = false
+        sv.axis = .vertical
+        sv.spacing = 16
+        return sv
+    }()
+    
+    private lazy var addGoalButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setImage(UIImage(systemName: "plus.circle"), for: .normal)
+        button.addAction(UIAction(handler: { _ in
+            self.addGoalTapped()
+        }), for: .touchUpInside)
+        return button
+    }()
+    
     // --- Card 3: Spending Components ---
     private lazy var timeRangeSegmentedControl: UISegmentedControl = {
         let control = UISegmentedControl(items: ["Current Month", "Previous Months"])
@@ -110,7 +130,7 @@ class DashboardViewController: UIViewController {
         
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(expenseDataDidChange),
+            selector: #selector(dataDidChange),
             name: .didUpdateExpenses,
             object: nil
         )
@@ -161,12 +181,12 @@ class DashboardViewController: UIViewController {
     private func buildDashboardCards() {
         let budgetCard = createBudgetCard()
         
-        // We will create the savings card in Step 2
+        let savingGoalCard = createSavingGoalsCard()
         
         let spendingCard = createSpendingBreakdownCard()
         
         contentStackView.addArrangedSubview(budgetCard)
-        // contentStackView.addArrangedSubview(savingsCard) // For Step 2
+        contentStackView.addArrangedSubview(savingGoalCard)
         contentStackView.addArrangedSubview(spendingCard)
         
         // Add a flexible spacer at the bottom
@@ -268,6 +288,109 @@ class DashboardViewController: UIViewController {
             budgetProgressBar.setProgress(0, animated: false)
             budgetProgressBar.progressTintColor = .systemGray
         }
+    }
+    
+    private func createSavingGoalsCard() -> UIView {
+        let card = createCardView()
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "SAVING GOALS"
+        titleLabel.font = .systemFont(ofSize: 12, weight: .bold)
+        titleLabel.textColor = .secondaryLabel
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        let hStack = UIStackView(arrangedSubviews: [titleLabel, addGoalButton])
+        hStack.translatesAutoresizingMaskIntoConstraints = false
+        hStack.axis = .horizontal
+        hStack.distribution = .equalSpacing
+        
+        let mainVStack = UIStackView(arrangedSubviews: [hStack, savingGoalsStackView])
+        
+        mainVStack.translatesAutoresizingMaskIntoConstraints = false
+        mainVStack.axis = .vertical
+        mainVStack.spacing = 16
+        
+        card.addSubview(mainVStack)
+        
+        NSLayoutConstraint.activate([
+            mainVStack.topAnchor.constraint(equalTo: card.topAnchor),
+            mainVStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            mainVStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            mainVStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
+        ])
+        return card
+    }
+    
+    private func refreshSavingGoalsCardData() {
+        for view in savingGoalsStackView.arrangedSubviews {
+            savingGoalsStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        
+        let goals = goalsStore.loadSavingGoals()
+        
+        if goals.isEmpty {
+            let label = UILabel()
+            label.text = "Tap the + to add a saving goal"
+            label.font = .systemFont(ofSize: 16, weight: .medium)
+            label.textColor = .secondaryLabel
+            label.textAlignment = .center
+            savingGoalsStackView.addArrangedSubview(label)
+        }else{
+            for goal in goals{
+                let goalRow = createGoalRow(goal: goal)
+                savingGoalsStackView.addArrangedSubview(goalRow)
+            }
+        }
+    }
+    
+    private func createGoalRow(goal: SavingGoal) -> UIView{
+        let iconView = UIImageView(image: UIImage(systemName: goal.iconName))
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconView.tintColor = .systemBlue
+        iconView.contentMode = .scaleAspectFit
+        
+        let nameLabel = UILabel()
+        nameLabel.text = goal.name
+        nameLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        
+        let progressLabel = UILabel()
+        let saved = CurrencyFormatter.shared.string(from: goal.savedAmount)
+        let total = CurrencyFormatter.shared.string(from: goal.targetAmount)
+        
+        progressLabel.text = "\(saved) / \(total)"
+        progressLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        progressLabel.textColor = .secondaryLabel
+        
+        var progress: Float = 0.0
+        if goal.targetAmount > 0{
+            progress = (NSDecimalNumber(decimal: goal.savedAmount).floatValue) / (NSDecimalNumber(decimal: goal.targetAmount).floatValue)
+        }
+        
+        let progressBar = RoundedProgressView(cornerRadius: 8)
+        progressBar.progress = min(progress, 1.0)
+        progressBar.progressTintColor = (progress >= 0) ? .systemGreen : .systemBlue
+        progressBar.trackTintColor = .systemGray5
+        
+        let labelStack = UIStackView(arrangedSubviews: [nameLabel, progressLabel, progressBar])
+        labelStack.axis = .vertical
+        labelStack.spacing = 4
+        
+        let hStack = UIStackView(arrangedSubviews: [iconView, labelStack])
+        hStack.axis = .horizontal
+        hStack.spacing = 16
+        hStack.alignment = .center
+        hStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        
+        NSLayoutConstraint.activate([
+            iconView.widthAnchor.constraint(equalToConstant: 24),
+            iconView.heightAnchor.constraint(equalToConstant: 24),
+            progressBar.heightAnchor.constraint(equalToConstant: 10)
+        ])
+        
+        return hStack
+
     }
     
     private func createSpendingBreakdownCard() -> UIView {
@@ -401,12 +524,12 @@ class DashboardViewController: UIViewController {
     /// Reloads all data for all dashboard cards
     @objc private func refreshDashboardData(animated: Bool) {
         refreshBudgetCardData()
-        //refreshSavingGoalsCardData()
+        refreshSavingGoalsCardData()
         refreshSpendingCardData(animated: animated)
     }
 
     /// Called when expense data changes
-    @objc private func expenseDataDidChange(){
+    @objc private func dataDidChange(){
         refreshDashboardData(animated: true)
     }
     
@@ -422,6 +545,13 @@ class DashboardViewController: UIViewController {
         
         let navController = UINavigationController(rootViewController: budgetVC)
         present(navController, animated: true, completion: nil)
+    }
+    
+    private func addGoalTapped(){
+//        let goalVC = SavingGoalFormController()
+//        goalVC.delegate = self
+//        let navController = UINavigationController(rootViewController: goalVC)
+//        present(navController, animated: true, completion: nil)
     }
     
     private func loadSavedData(){
