@@ -2,18 +2,25 @@
 //  DashboardViewController.swift
 //  ios-expense-tracker
 //
-//  Created by James Chen on 27/10/25.
+//  Created by James Chen on 27/10/25
 //
 
 import UIKit
 import DGCharts
 
+// A custom gesture recognizer to hold the Goal ID
+fileprivate class GoalTapGestureRecognizer: UITapGestureRecognizer {
+    var goalID: UUID?
+}
+
+
 class DashboardViewController: UIViewController {
 
     private let expenseStore = ExpenseDataStore.shared
     private let budgetStore = BudgetDataStore.shared
-    private let goalsStore = SavingGoalDataStore.shared
+    private let savingGoalStore = SavingGoalDataStore.shared
     
+    // Properties for pie chart
     private var expensesByCategory: [String: Double] = [:]
     private var expensesForChart: [Expense] = []
     
@@ -88,7 +95,7 @@ class DashboardViewController: UIViewController {
         }), for: .touchUpInside)
         return button
     }()
-    
+
     // --- Card 3: Spending Components ---
     private lazy var timeRangeSegmentedControl: UISegmentedControl = {
         let control = UISegmentedControl(items: ["Current Month", "Previous Months"])
@@ -122,45 +129,25 @@ class DashboardViewController: UIViewController {
     // MARK: - View Lifecycle
     // ---
     
-    // MARK: - View Lifecycle
-        // ---
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Overview"
+        navigationItem.largeTitleDisplayMode = .never // Your "sticky title" fix
+        view.backgroundColor = .systemGroupedBackground
         
-        override func viewDidLoad() {
-            super.viewDidLoad()
-            title = "Overview"
-            
-            view.backgroundColor = .systemGroupedBackground
-            
-            
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(dataDidChange),
-                name: .didUpdateBudget,
-                object: nil
-            )
-            
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(dataDidChange),
-                name: .didUpdateSavingGoals,
-                object: nil
-            )
-            
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(dataDidChange),
-                name: .didUpdateExpenses,
-                object: nil
-            )
-            
-            setupLayout()
-            loadSavedData()
-            refreshDashboardData(animated: false)
-        }
+        // Listen for ALL data updates
+        NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: .didUpdateBudget, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: .didUpdateSavingGoals, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: .didUpdateExpenses, object: nil)
         
-        deinit {
-            NotificationCenter.default.removeObserver(self)
-        }
+        setupLayout()
+        loadSavedData()
+        refreshDashboardData(animated: false)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
     
     // ---
     // MARK: - Setup UI
@@ -184,6 +171,7 @@ class DashboardViewController: UIViewController {
             contentStackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
             contentStackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             contentStackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -16),
+            // This is key: make the stack view's width match the scroll view's frame
             contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
         ])
         
@@ -191,16 +179,13 @@ class DashboardViewController: UIViewController {
         buildDashboardCards()
     }
     
-    /// Creates and adds all the dashboard cards to the stack view
     private func buildDashboardCards() {
         let budgetCard = createBudgetCard()
-        
-        let savingGoalCard = createSavingGoalsCard()
-        
+        let savingsCard = createSavingGoalsCard()
         let spendingCard = createSpendingBreakdownCard()
         
         contentStackView.addArrangedSubview(budgetCard)
-        contentStackView.addArrangedSubview(savingGoalCard)
+        contentStackView.addArrangedSubview(savingsCard)
         contentStackView.addArrangedSubview(spendingCard)
         
         // Add a flexible spacer at the bottom
@@ -255,7 +240,6 @@ class DashboardViewController: UIViewController {
     }
     
     private func refreshBudgetCardData() {
-
         if let budget = budgetStore.loadBudget() {
             let monthlyIncome = budget.income
             let monthlySavingGoal = budget.savingGoal
@@ -296,13 +280,17 @@ class DashboardViewController: UIViewController {
             budgetProgressBar.setProgress(progress, animated: true)
             
         } else {
- 
+    
             budgetAmountLeftLabel.text = "$0.00 Left"
             budgetSpentLabel.text = "Tap the ✏️ to set your budget"
             budgetProgressBar.setProgress(0, animated: false)
             budgetProgressBar.progressTintColor = .systemGray
         }
     }
+    
+    // ---
+    // MARK: - Card 2: Saving Goals
+    // ---
     
     private func createSavingGoalsCard() -> UIView {
         let card = createCardView()
@@ -311,15 +299,15 @@ class DashboardViewController: UIViewController {
         titleLabel.text = "SAVING GOALS"
         titleLabel.font = .systemFont(ofSize: 12, weight: .bold)
         titleLabel.textColor = .secondaryLabel
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
         
+        // Horizontal stack for Title and Add button
         let hStack = UIStackView(arrangedSubviews: [titleLabel, addGoalButton])
         hStack.translatesAutoresizingMaskIntoConstraints = false
         hStack.axis = .horizontal
         hStack.distribution = .equalSpacing
         
+        // Main vertical stack for the card
         let mainVStack = UIStackView(arrangedSubviews: [hStack, savingGoalsStackView])
-        
         mainVStack.translatesAutoresizingMaskIntoConstraints = false
         mainVStack.axis = .vertical
         mainVStack.spacing = 16
@@ -332,70 +320,84 @@ class DashboardViewController: UIViewController {
             mainVStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             mainVStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
         ])
+        
         return card
     }
     
-    private func refreshSavingGoalsCardData() {
-        for view in savingGoalsStackView.arrangedSubviews {
-            savingGoalsStackView.removeArrangedSubview(view)
-            view.removeFromSuperview()
-        }
+    // (UPDATED) This function now contains the "Completed State" logic
+    private func createGoalRow(goal: SavingGoal) -> UIView {
         
-        let goals = goalsStore.loadSavingGoals()
+        // Check if the goal is completed
+        let isCompleted = goal.savedAmount >= goal.targetAmount
         
-        if goals.isEmpty {
-            let label = UILabel()
-            label.text = "Tap the + to add a saving goal"
-            label.font = .systemFont(ofSize: 16, weight: .medium)
-            label.textColor = .secondaryLabel
-            label.textAlignment = .center
-            savingGoalsStackView.addArrangedSubview(label)
-        }else{
-            for goal in goals{
-                let goalRow = createGoalRow(goal: goal)
-                savingGoalsStackView.addArrangedSubview(goalRow)
-            }
-        }
-    }
-    
-    private func createGoalRow(goal: SavingGoal) -> UIView{
-        let iconView = UIImageView(image: UIImage(systemName: goal.iconName))
+        let iconView = UIImageView()
         iconView.translatesAutoresizingMaskIntoConstraints = false
-        iconView.tintColor = .systemBlue
         iconView.contentMode = .scaleAspectFit
         
         let nameLabel = UILabel()
-        nameLabel.text = goal.name
         nameLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         
         let progressLabel = UILabel()
-        let saved = CurrencyFormatter.shared.string(from: goal.savedAmount)
-        let total = CurrencyFormatter.shared.string(from: goal.targetAmount)
-        
-        progressLabel.text = "\(saved) / \(total)"
-        progressLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        progressLabel.font = .systemFont(ofSize: 13, weight: .regular)
         progressLabel.textColor = .secondaryLabel
         
-        var progress: Float = 0.0
-        if goal.targetAmount > 0{
-            progress = (NSDecimalNumber(decimal: goal.savedAmount).floatValue) / (NSDecimalNumber(decimal: goal.targetAmount).floatValue)
-        }
-        
-        let progressBar = RoundedProgressView(cornerRadius: 8)
-        progressBar.progress = min(progress, 1.0)
-        progressBar.progressTintColor = (progress >= 0) ? .systemGreen : .systemBlue
+        let progressBar = RoundedProgressView(cornerRadius: 5)
         progressBar.trackTintColor = .systemGray5
         
+        if isCompleted {
+            // --- THIS IS YOUR "COMPLETED" STATE ---
+            
+            // 1. Icon: Use a checkmark
+            iconView.image = UIImage(systemName: "checkmark.circle.fill")
+            iconView.tintColor = .systemGreen
+            
+            // 2. Name: Add a strikethrough (as you suggested!)
+            let attributedName = NSAttributedString(
+                string: goal.name,
+                attributes: [.strikethroughStyle: NSUnderlineStyle.single.rawValue]
+            )
+            nameLabel.attributedText = attributedName
+            nameLabel.textColor = .secondaryLabel // Fade it out
+            
+            // 3. Progress Text: Show a "Completed" message
+            let total = CurrencyFormatter.shared.string(from: goal.targetAmount)
+            progressLabel.text = "Completed! \(total)"
+            
+            // 4. Progress Bar: Fill it and make it green
+            progressBar.progress = 1.0
+            progressBar.progressTintColor = .systemGreen
+            
+        } else {
+            // --- THIS IS YOUR NORMAL, "IN-PROGRESS" STATE ---
+            
+            iconView.image = UIImage(systemName: goal.iconName)
+            iconView.tintColor = .systemBlue
+            
+            nameLabel.text = goal.name
+            
+            let saved = CurrencyFormatter.shared.string(from: goal.savedAmount)
+            let total = CurrencyFormatter.shared.string(from: goal.targetAmount)
+            progressLabel.text = "\(saved) / \(total)"
+            
+            var progress: Float = 0.0
+            if goal.targetAmount > 0 {
+                progress = (NSDecimalNumber(decimal: goal.savedAmount).floatValue) / (NSDecimalNumber(decimal: goal.targetAmount).floatValue)
+            }
+            
+            progressBar.progress = min(progress, 1.0)
+            progressBar.progressTintColor = .systemBlue
+        }
+
+        // Layout code
         let labelStack = UIStackView(arrangedSubviews: [nameLabel, progressLabel, progressBar])
         labelStack.axis = .vertical
         labelStack.spacing = 4
         
         let hStack = UIStackView(arrangedSubviews: [iconView, labelStack])
-        hStack.axis = .horizontal
-        hStack.spacing = 16
-        hStack.alignment = .center
         hStack.translatesAutoresizingMaskIntoConstraints = false
-        
+        hStack.axis = .horizontal
+        hStack.spacing = 12
+        hStack.alignment = .center
         
         NSLayoutConstraint.activate([
             iconView.widthAnchor.constraint(equalToConstant: 24),
@@ -404,8 +406,47 @@ class DashboardViewController: UIViewController {
         ])
         
         return hStack
-
     }
+
+    // (MODIFIED) This function now adds tap gestures
+    private func refreshSavingGoalsCardData() {
+        // 1. Clear all old goal rows
+        for view in savingGoalsStackView.arrangedSubviews {
+            savingGoalsStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        
+        // 2. Load the goals
+        let goals = savingGoalStore.loadSavingGoals()
+        
+        // 3. Add new rows
+        if goals.isEmpty {
+            let label = UILabel()
+            label.text = "Tap the + to add a saving goal."
+            label.font = .systemFont(ofSize: 14, weight: .medium)
+            label.textColor = .secondaryLabel
+            label.textAlignment = .center
+            savingGoalsStackView.addArrangedSubview(label)
+        } else {
+            for goal in goals {
+                let goalRow = createGoalRow(goal: goal)
+                
+                // --- Make the row tappable ---
+                goalRow.isUserInteractionEnabled = true
+                let tap = GoalTapGestureRecognizer(target: self, action: #selector(goalTapped))
+                tap.goalID = goal.id // Pass the ID
+                goalRow.addGestureRecognizer(tap)
+                // ---
+                
+                savingGoalsStackView.addArrangedSubview(goalRow)
+            }
+        }
+    }
+
+
+    // ---
+    // MARK: - Card 3: Spending Breakdown
+    // ---
     
     private func createSpendingBreakdownCard() -> UIView {
         let card = createCardView()
@@ -416,30 +457,33 @@ class DashboardViewController: UIViewController {
         titleLabel.textColor = .secondaryLabel
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         
+        // Add components to the card
         card.addSubview(titleLabel)
         card.addSubview(timeRangeSegmentedControl)
         card.addSubview(pieChartView)
         
         NSLayoutConstraint.activate([
+            // Title
             titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             
+            // Segmented Control
             timeRangeSegmentedControl.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             timeRangeSegmentedControl.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             timeRangeSegmentedControl.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             
+            // Pie Chart
             pieChartView.topAnchor.constraint(equalTo: timeRangeSegmentedControl.bottomAnchor, constant: 16),
             pieChartView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             pieChartView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             pieChartView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
-            pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor)
+            pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor) // Keep aspect ratio
         ])
         
         return card
     }
     
     private func refreshSpendingCardData(animated: Bool) {
-        
         let allExpenses = expenseStore.loadExpenses()
         let selectedRange = timeRangeSegmentedControl.selectedSegmentIndex
         
@@ -453,15 +497,14 @@ class DashboardViewController: UIViewController {
 
         let filteredExpenses: [Expense]
         
-        if selectedRange == 0 {
-
+        if selectedRange == 0 { // Current Month
             filteredExpenses = allExpenses.filter { $0.date >= startOfCurrentMonth && $0.type != .savings }
-        } else {
+        } else { // Previous Months
             filteredExpenses = allExpenses.filter { $0.date < startOfCurrentMonth && $0.type != .savings }
         }
         
         self.expensesForChart = filteredExpenses
-        
+
         guard !filteredExpenses.isEmpty else {
             pieChartView.data = nil
             let centerText = NSAttributedString(string: "No spending for this period.", attributes: [
@@ -535,19 +578,16 @@ class DashboardViewController: UIViewController {
     // MARK: - Data Logic & Selectors
     // ---
     
-    /// Reloads all data for all dashboard cards
     @objc private func refreshDashboardData(animated: Bool) {
         refreshBudgetCardData()
         refreshSavingGoalsCardData()
         refreshSpendingCardData(animated: animated)
     }
 
-    /// Called when expense data changes
     @objc private func dataDidChange(){
         refreshDashboardData(animated: true)
     }
     
-    /// Called when the segmented control (in Card 3) changes
     @objc private func timeRangeDidChange() {
         refreshSpendingCardData(animated: true)
     }
@@ -561,12 +601,70 @@ class DashboardViewController: UIViewController {
         present(navController, animated: true, completion: nil)
     }
     
-    private func addGoalTapped(){
+    // (MODIFIED) This now presents the form correctly
+    private func addGoalTapped() {
         let goalVC = SavingGoalFormController()
         goalVC.delegate = self
+        goalVC.goalToEdit = nil // Make sure it's in "Add Mode"
         let navController = UINavigationController(rootViewController: goalVC)
         present(navController, animated: true, completion: nil)
     }
+    
+    // --- (NEW) Action Methods for Edit/Delete ---
+    
+    @objc private func goalTapped(sender: GoalTapGestureRecognizer) {
+            guard let goalID = sender.goalID else {
+                print("Error: Tapped goal view has no goalID.")
+                return
+            }
+            
+            // (FIXED) Load all goals and find the one that was tapped
+            guard let tappedGoal = savingGoalStore.loadSavingGoals().first(where: { $0.id == goalID }) else {
+                print("Error: Could not find tapped goal with ID \(goalID)")
+                return
+            }
+
+            // Create the Action Sheet
+            let alert = UIAlertController(title: tappedGoal.name, message: "What would you like to do?", preferredStyle: .actionSheet)
+            
+            // --- EDIT ACTION ---
+            alert.addAction(UIAlertAction(title: "Edit Goal", style: .default, handler: { _ in
+                let goalVC = SavingGoalFormController()
+                goalVC.delegate = self
+                goalVC.goalToEdit = tappedGoal // <-- Pass the goal to the form
+                let navController = UINavigationController(rootViewController: goalVC)
+                self.present(navController, animated: true)
+            }))
+            
+            // --- DELETE ACTION ---
+            alert.addAction(UIAlertAction(title: "Delete Goal", style: .destructive, handler: { _ in
+                // Show a confirmation before deleting
+                self.showDeleteConfirmation(for: tappedGoal)
+            }))
+            
+            // --- CANCEL ACTION ---
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+            
+            // Show the menu
+            present(alert, animated: true)
+        }
+
+    // (NEW) Helper for the "Delete" action
+    private func showDeleteConfirmation(for goal: SavingGoal) {
+        let alert = UIAlertController(title: "Delete \(goal.name)?", message: "Are you sure you want to delete this goal? This action cannot be undone.", preferredStyle: .alert)
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
+            // Tell the store to delete it
+            self.savingGoalStore.deleteSavingGoal(goal)
+            // The store's notification will handle the refresh!
+        }))
+        
+        present(alert, animated: true)
+    }
+    
+    // ---
     
     private func loadSavedData(){
         if budgetStore.loadBudget() != nil{
@@ -576,11 +674,6 @@ class DashboardViewController: UIViewController {
         }
     }
     
-    // ---
-    // MARK: - Helper Functions
-    // ---
-    
-    /// Creates a standardized card view
     private func createCardView() -> UIView {
         let cardView = UIView()
         cardView.translatesAutoresizingMaskIntoConstraints = false
@@ -598,7 +691,6 @@ class DashboardViewController: UIViewController {
 // ---
 // MARK: - ChartViewDelegate
 // ---
-
 extension DashboardViewController: ChartViewDelegate {
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
         guard let pieEntry = entry as? PieChartDataEntry, let categoryString = pieEntry.label else { return }
@@ -615,18 +707,40 @@ extension DashboardViewController: ChartViewDelegate {
     }
 }
 
+// ---
+// MARK: - BudgetFormControllerDelegate
+// ---
 extension DashboardViewController: BudgetFormControllerDelegate{
     func budgetFormController(didSave budget: Budget) {
         budgetStore.saveBudget(budget)
-        refreshDashboardData(animated: true)
+        // No need to call refresh, notification will handle it
     }
 }
 
+// ---
+// MARK: - SavingGoalFormControllerDelegate
+// ---
 extension DashboardViewController: SavingGoalFormControllerDelegate {
     
     func savingGoalFormController(_ controller: SavingGoalFormController, didSaveNew goal: SavingGoal) {
-        
-        goalsStore.addSavingGoal(goal)
-        refreshDashboardData(animated: true)
+        // Tell the store to save it
+        savingGoalStore.addSavingGoal(goal)
+        // Dismiss the form
+        controller.dismiss(animated: true)
+        // The notification from the store will trigger the UI refresh
+    }
+    
+    func savingGoalFormController(_ controller: SavingGoalFormController, didUpdate goal: SavingGoal) {
+        // Tell the store to update it
+        savingGoalStore.updateSavingGoal(goal)
+        // Dismiss the form
+        controller.dismiss(animated: true)
+        // The notification from the store will trigger the UI refresh
+    }
+    
+    func savingGoalFormControllerDidCancel(_ controller: SavingGoalFormController) {
+        // Just dismiss the form
+        controller.dismiss(animated: true)
     }
 }
+
