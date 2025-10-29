@@ -122,31 +122,45 @@ class DashboardViewController: UIViewController {
     // MARK: - View Lifecycle
     // ---
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        title = "Overview"
+    // MARK: - View Lifecycle
+        // ---
         
-        view.backgroundColor = .systemGroupedBackground
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            title = "Overview"
+            
+            view.backgroundColor = .systemGroupedBackground
+            
+            
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(dataDidChange),
+                name: .didUpdateBudget,
+                object: nil
+            )
+            
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(dataDidChange),
+                name: .didUpdateSavingGoals,
+                object: nil
+            )
+            
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(dataDidChange),
+                name: .didUpdateExpenses,
+                object: nil
+            )
+            
+            setupLayout()
+            loadSavedData()
+            refreshDashboardData(animated: false)
+        }
         
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(dataDidChange),
-            name: .didUpdateExpenses,
-            object: nil
-        )
-        
-        setupLayout()
-        loadSavedData()
-        refreshDashboardData(animated: false)
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(
-            self,
-            name: .didUpdateExpenses,
-            object: nil
-        )
-    }
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
     
     // ---
     // MARK: - Setup UI
@@ -313,7 +327,7 @@ class DashboardViewController: UIViewController {
         card.addSubview(mainVStack)
         
         NSLayoutConstraint.activate([
-            mainVStack.topAnchor.constraint(equalTo: card.topAnchor),
+            mainVStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             mainVStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             mainVStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             mainVStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
@@ -548,10 +562,10 @@ class DashboardViewController: UIViewController {
     }
     
     private func addGoalTapped(){
-//        let goalVC = SavingGoalFormController()
-//        goalVC.delegate = self
-//        let navController = UINavigationController(rootViewController: goalVC)
-//        present(navController, animated: true, completion: nil)
+        let goalVC = SavingGoalFormController()
+        goalVC.delegate = self
+        let navController = UINavigationController(rootViewController: goalVC)
+        present(navController, animated: true, completion: nil)
     }
     
     private func loadSavedData(){
@@ -604,6 +618,15 @@ extension DashboardViewController: ChartViewDelegate {
 extension DashboardViewController: BudgetFormControllerDelegate{
     func budgetFormController(didSave budget: Budget) {
         budgetStore.saveBudget(budget)
+        refreshDashboardData(animated: true)
+    }
+}
+
+extension DashboardViewController: SavingGoalFormControllerDelegate {
+    
+    func savingGoalFormController(_ controller: SavingGoalFormController, didSaveNew goal: SavingGoal) {
+        
+        goalsStore.addSavingGoal(goal)
         refreshDashboardData(animated: true)
     }
 }

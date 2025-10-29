@@ -47,6 +47,15 @@ class ListViewController: UIViewController {
         // Do any additional setup after loading the view.
         view.backgroundColor = .systemBackground
         title = "Expenses"
+        
+        // (NEW) Add observer to listen for data changes from any source
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(dataDidChange),
+            name: .didUpdateExpenses,
+            object: nil
+        )
+        
         setupNavigationBar()
         setupSearchController()
         setupDateFilterView()
@@ -59,6 +68,10 @@ class ListViewController: UIViewController {
         
     }
     
+    // (NEW) Remove the observer
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
     
     
     private func setupSearchController(){
@@ -113,7 +126,7 @@ class ListViewController: UIViewController {
             dateFilterView.isHidden = true
             
             NSLayoutConstraint.activate([
-                dateFilterView.topAnchor.constraint(equalTo: view.topAnchor),
+                dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor), // (MODIFIED) Changed from view.topAnchor
                 dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
             ])
@@ -174,6 +187,15 @@ class ListViewController: UIViewController {
     }
     
     // MARK: Helper
+    
+    // (NEW) This function is called by the Notification observer
+    @objc private func dataDidChange() {
+        // 1. Reload the "source of truth"
+        allExpenses = store.loadExpenses()
+        
+        // 2. Re-apply the snapshot
+        applySnapshot()
+    }
     
     @objc private func addNewExpense(){
         // add new expense
@@ -287,9 +309,8 @@ extension ListViewController: UITableViewDelegate{
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
 
         guard let expenseToDelete = dataSource.itemIdentifier(for: indexPath) else { return }
-        allExpenses.removeAll { $0.id == expenseToDelete.id }
-        store.saveExpenses(allExpenses)
-        applySnapshot()
+        // (MODIFIED) Tell the store to delete. The notification will handle the snapshot update.
+        store.deleteExpense(expenseToDelete)
     }
     
     func tableView(_ tableView: UITableView,
@@ -298,9 +319,8 @@ extension ListViewController: UITableViewDelegate{
         guard let expense = dataSource.itemIdentifier(for: indexPath) else { return nil }
 
         let delete = UIContextualAction(style: .destructive, title: "Delete") { _,_,done in
-            self.allExpenses.removeAll { $0.id == expense.id }
-            self.store.saveExpenses(self.allExpenses)
-            self.applySnapshot()
+            // (MODIFIED) Tell the store to delete. The notification will handle the snapshot update.
+            self.store.deleteExpense(expense)
             done(true)
         }
         
@@ -310,22 +330,20 @@ extension ListViewController: UITableViewDelegate{
     }
 }
 
+// (MODIFIED) Updated to use the new delegate protocol
 extension ListViewController: ExpenseFormControllerDelegate{
-    func didAddExpense(_ expense: Expense) {
-        allExpenses.append(expense)
-        store.saveExpenses(allExpenses)
-        applySnapshot()
+    func expenseFormControllerDidFinish(controller: ExpenseFormController) {
+        // The delegate's only job is to dismiss the form.
+        // The notification observer (dataDidChange) will handle refreshing the data.
+        controller.dismiss(animated: true)
     }
 }
 
 extension ListViewController: ExpenseDetailViewControllerDelegate{
     func didFinishEditing(expense updatedExpense: Expense) {
-        if let index = allExpenses.firstIndex(where: { $0.id == updatedExpense.id }) {
-            allExpenses[index] = updatedExpense
-            
-            store.saveExpenses(allExpenses)
-            applySnapshot()
-        }
+        // (MODIFIED) Tell the store to update.
+        // The notification observer (dataDidChange) will handle the refresh.
+        store.updateExpense(updatedExpense)
     }
 }
 
@@ -411,4 +429,3 @@ extension ListViewController: DateFilterViewControllerDelegate {
         updateSearchResults(for: searchController)
     }
 }
-

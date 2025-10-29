@@ -37,6 +37,7 @@ class BudgetDataStore{
         
         do{
             try data.write(to: fileURL)
+            NotificationCenter.default.post(name: .didUpdateBudget, object: nil)
             print("Budget saved successfully")
         }catch{
             print("Error saving budget: \(error.localizedDescription)")
