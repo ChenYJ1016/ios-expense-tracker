@@ -79,7 +79,15 @@ class SavingGoalDataStore {
         
         allGoals[index].savedAmount += amount
         
-        // Save the entire updated list
+        saveSavingGoals(allGoals)
+    }
+    
+    func subtract(amount: Decimal, from goalID: UUID){
+        var allGoals = loadSavingGoals()
+        
+        guard let index  = allGoals.firstIndex(where: { $0.id == goalID }) else { return }
+        let newAmount = allGoals[index].savedAmount - amount
+        allGoals[index].savedAmount = max(0, newAmount)
         saveSavingGoals(allGoals)
     }
 
@@ -95,7 +103,6 @@ class SavingGoalDataStore {
         
         do{
             try data.write(to: fileUrl)
-            // Post notification so all listeners (like the dashboard) can refresh
             NotificationCenter.default.post(name: .didUpdateSavingGoals, object: nil)
             print("Saved to saving goal dataStore")
         } catch {

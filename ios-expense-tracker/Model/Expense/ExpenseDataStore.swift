@@ -43,13 +43,17 @@ class ExpenseDataStore {
             try data.write(to: fileURL)
             NotificationCenter.default.post(name: .didUpdateExpenses, object: nil)
         } catch {
-            // This 'catch' block will run if the write operation fails
+           
             print("Error saving expenses: \(error.localizedDescription)")
         }
     }
     
     func addExpense(_ expense: Expense)  {
         var allExpenses = loadExpenses()
+        
+        if expense.type == .savings, let goalToUpdate = findGoal(for: expense.goalID){
+            SavingGoalDataStore.shared.add(amount: expense.amount, to: goalToUpdate)
+        }
         allExpenses.append(expense)
         saveExpenses(allExpenses)
     }
@@ -63,9 +67,33 @@ class ExpenseDataStore {
         saveExpenses(allExpenses)
     }
     
-    func deleteExpense(_ expense: Expense)  {
+    func updateExpense(_ updatedExpense: Expense, originalAmount: Decimal, originalGoalID: UUID?){
+        if let oldGoalID = originalGoalID{
+            SavingGoalDataStore.shared.subtract(amount: originalAmount, from: oldGoalID)
+        }
+        
+        if updatedExpense.type == .savings, let newGoal = findGoal(for: updatedExpense.goalID){
+            SavingGoalDataStore.shared.add(amount: updatedExpense.amount, to: newGoal)
+        }
+        
         var allExpenses = loadExpenses()
+        if let index = allExpenses.firstIndex(where: {$0.id == updatedExpense.id}){
+            allExpenses[index] = updatedExpense
+        }
+        
+        saveExpenses(allExpenses)
+    }
+    
+    func deleteExpense(_ expense: Expense)  {
+        
+        var allExpenses = loadExpenses()
+        
         allExpenses.removeAll(where: {$0.id == expense.id})
+        
+        if expense.type == .savings, let goalID = expense.goalID {
+            SavingGoalDataStore.shared.subtract(amount: expense.amount, from: goalID)
+        }
+        
         saveExpenses(allExpenses)
     }
     
@@ -74,4 +102,9 @@ class ExpenseDataStore {
         allExpenses.remove(at: index)
         saveExpenses(allExpenses)
     }
+    
+    private func findGoal(for goalID: UUID?) -> SavingGoal? {
+            guard let goalID = goalID else { return nil }
+            return SavingGoalDataStore.shared.loadSavingGoals().first(where: { $0.id == goalID })
+        }
 }

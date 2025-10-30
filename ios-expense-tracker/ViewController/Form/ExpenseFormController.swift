@@ -63,10 +63,11 @@ class ExpenseFormController: UITableViewController {
     private func loadSavingGoals() {
         self.availableGoals = savingGoalStore.loadSavingGoals()
         
-        if expense == nil || expense?.type != .savings {
+        if let expenseToEdit = expense, let goalID = expenseToEdit.goalID {
+            self.selectedGoal = availableGoals.first(where: { $0.id == goalID })
+        } else {
              self.selectedGoal = availableGoals.first
         }
-        
     }
     
     private func setupNavigationBar(){
@@ -90,30 +91,46 @@ class ExpenseFormController: UITableViewController {
         view.endEditing(true)
         
         if var expenseToUpdate = expense {
+            
+            let originalGoadID = expenseToUpdate.goalID
+            let originalAmount = expenseToUpdate.amount
+            
             expenseToUpdate.name = expenseName
             expenseToUpdate.date = expenseDate
             expenseToUpdate.type = expenseType
             expenseToUpdate.amount = expenseAmount
             
-            expenseStore.updateExpense(expenseToUpdate)
+            if expenseType == .savings{
+                expenseToUpdate.goalID = selectedGoal?.id
+            }else{
+                expenseToUpdate.goalID = nil
+            }
+            
+            expenseStore.updateExpense(expenseToUpdate, originalAmount: originalAmount, originalGoalID: originalGoadID)
             
         } else {
+            
+            let newGoalID = (expenseType == .savings) ? selectedGoal?.id : nil
             let newExpense = Expense(
-                name: expenseName, date: expenseDate, type: expenseType, amount: expenseAmount
+                name: expenseName,
+                date: expenseDate,
+                type: expenseType,
+                amount: expenseAmount,
+                goalID: newGoalID
             )
             
             expenseStore.addExpense(newExpense)
             
-            if newExpense.type == .savings {
-                if availableGoals.isEmpty {
-                    print("User saved a 'Savings' expense but has no goals set up.")
-                }
-                else if let goalToUpdate = self.selectedGoal {
-                    savingGoalStore.add(amount: newExpense.amount, to: goalToUpdate)
-                } else {
-                    print("Error: Savings expense saved but no goal was selected.")
-                }
-            }
+//            if newExpense.type == .savings {
+//                if availableGoals.isEmpty {
+//                    print("User saved a 'Savings' expense but has no goals set up.")
+//                }
+//                else if let goalToUpdate = self.selectedGoal {
+//                    savingGoalStore.add(amount: newExpense.amount, to: goalToUpdate)
+//                } else {
+//                    print("Error: Savings expense saved but no goal was selected.")
+//                }
+//            }
         }
         
         delegate?.expenseFormControllerDidFinish(controller: self)
@@ -127,7 +144,6 @@ class ExpenseFormController: UITableViewController {
         self.expenseDate = expenseToEdit.date
         self.expenseType = expenseToEdit.type
         self.expenseAmount = expenseToEdit.amount
-   
     }
     
     // MARK: - Table view data source

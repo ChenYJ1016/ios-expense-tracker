@@ -33,10 +33,20 @@ nonisolated enum ExpenseType: String, CaseIterable, Codable, Hashable{
 }
 
 nonisolated struct Expense: Identifiable, Codable, Hashable{
-    let id = UUID()
+    let id: UUID
+    var goalID: UUID?
     var name: String
     var date: Date
     var type: ExpenseType
     var amount: Decimal
     
+    
+    init(id: UUID = UUID(), name: String, date: Date, type: ExpenseType, amount: Decimal, goalID: UUID? = nil){
+        self.id = id
+        self.name = name
+        self.date = date
+        self.type = type
+        self.amount = amount
+        self.goalID = goalID
+    }
 }
