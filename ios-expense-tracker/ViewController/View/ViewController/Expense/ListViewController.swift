@@ -340,8 +340,14 @@ extension ListViewController: UITableViewDelegate{
     }
 }
 
-extension ListViewController: ExpenseFormControllerDelegate{
-    func expenseFormControllerDidFinish(controller: ExpenseFormController) {
+// MARK: - ExpenseFormControllerDelegate
+extension ListViewController: ExpenseFormControllerDelegate {
+    
+    func expenseFormController(didSave expense: Expense, controller: ExpenseFormController) {
+        controller.dismiss(animated: true)
+    }
+    
+    func expenseFormControllerDidCancel(controller: ExpenseFormController) {
         controller.dismiss(animated: true)
     }
 }

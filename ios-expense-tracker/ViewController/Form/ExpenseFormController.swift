@@ -8,7 +8,8 @@
 import UIKit
 
 protocol ExpenseFormControllerDelegate: AnyObject {
-    func expenseFormControllerDidFinish(controller: ExpenseFormController)
+    func expenseFormController(didSave expense: Expense, controller: ExpenseFormController)
+    func expenseFormControllerDidCancel(controller: ExpenseFormController)
 }
 
 class ExpenseFormController: UITableViewController {
@@ -26,8 +27,6 @@ class ExpenseFormController: UITableViewController {
     let pickerViewCellIdentifier = "PickerViewCell"
     let goalPickerCellIdentifier = "GoalPickerCell"
 
-    
-    // Data State Properties
     private var expenseName: String = ""
     private var expenseAmount: Decimal = 0.0
     private var expenseDate: Date = Date()
@@ -65,7 +64,9 @@ class ExpenseFormController: UITableViewController {
         if let expenseToEdit = expense, let goalID = expenseToEdit.goalID {
             self.selectedGoal = availableGoals.first(where: { $0.id == goalID })
         } else {
-             self.selectedGoal = availableGoals.first
+             if self.expenseType == .savings {
+                self.selectedGoal = availableGoals.first
+             }
         }
     }
     
@@ -81,46 +82,65 @@ class ExpenseFormController: UITableViewController {
     }
     
     @objc private func handleCancel(){
-        delegate?.expenseFormControllerDidFinish(controller: self)
-        dismiss(animated: true, completion: nil)
+
+        delegate?.expenseFormControllerDidCancel(controller: self)
     }
     
     @objc private func saveTapped(){
         view.endEditing(true)
         
+        let finalExpenseName = expenseName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if finalExpenseName.isEmpty {
+            showAlert(title: "Missing Name", message: "Please enter a name for this expense.")
+            return
+        }
+
+        if expenseAmount <= 0 {
+            showAlert(title: "Invalid Amount", message: "Please enter an amount greater than $0.")
+            return
+        }
+        
+        var finalGoalID: UUID? = nil
+        if expenseType == .savings {
+            if availableGoals.isEmpty {
+                showAlert(title: "No Saving Goals", message: "You must create a saving goal first before you can assign a saving expense.")
+                return
+            }
+            guard let goal = selectedGoal else {
+                showAlert(title: "No Goal Selected", message: "Please select a saving goal for this expense.")
+                return
+            }
+            finalGoalID = goal.id
+        }
+                
         if var expenseToUpdate = expense {
             let originalGoalID = expenseToUpdate.goalID
             let originalAmount = expenseToUpdate.amount
             
-            expenseToUpdate.name = expenseName
+            expenseToUpdate.name = finalExpenseName
             expenseToUpdate.date = expenseDate
             expenseToUpdate.type = expenseType
             expenseToUpdate.amount = expenseAmount
-            
-            if expenseType == .savings {
-                expenseToUpdate.goalID = selectedGoal?.id
-            } else {
-                expenseToUpdate.goalID = nil
-            }
+            expenseToUpdate.goalID = finalGoalID
             
             expenseStore.updateExpense(expenseToUpdate, originalAmount: originalAmount, originalGoalID: originalGoalID)
             
-        } else {
-            let newGoalID = (expenseType == .savings) ? selectedGoal?.id : nil
+            delegate?.expenseFormController(didSave: expenseToUpdate, controller: self)
             
+        } else {
             let newExpense = Expense(
-                name: expenseName,
+                name: finalExpenseName,
                 date: expenseDate,
                 type: expenseType,
                 amount: expenseAmount,
-                goalID: newGoalID
+                goalID: finalGoalID
             )
             
             expenseStore.addExpense(newExpense)
+            
+            delegate?.expenseFormController(didSave: newExpense, controller: self)
         }
         
-        delegate?.expenseFormControllerDidFinish(controller: self)
-        dismiss(animated: true , completion: nil)
     }
     
     private func configureForEditing(){
@@ -138,7 +158,6 @@ class ExpenseFormController: UITableViewController {
         
         if indexPath.section == 0 {
             if indexPath.row == 2 { return 180 }
-            
             if indexPath.row == 3 || indexPath.row == 4 {
                 if expenseType == .savings && !availableGoals.isEmpty {
                     if indexPath.row == 4 { return 180 }
@@ -222,7 +241,7 @@ class ExpenseFormController: UITableViewController {
                     content.secondaryText = selectedGoal?.name ?? "None"
                 }
                 cell.contentConfiguration = content
-                                
+                                    
                 return cell
 
             case (0, 4):
@@ -234,7 +253,7 @@ class ExpenseFormController: UITableViewController {
                 if let goal = selectedGoal, let selectedRow = availableGoals.firstIndex(of: goal) {
                     cell.pickerView.selectRow(selectedRow, inComponent: 0, animated: false)
                 }
-                                
+                                    
                 return cell
 
             case (1, 0):
@@ -250,6 +269,8 @@ class ExpenseFormController: UITableViewController {
                 cell.textField.placeholder = "Total expense"
                 if !cell.textField.isEditing {
                     cell.textField.text = CurrencyFormatter.shared.string(from: expenseAmount)
+                } else {
+                    cell.textField.text = expenseAmount == 0 ? "" : "\(expenseAmount)"
                 }
                 
                 cell.textField.keyboardType = .decimalPad
@@ -271,11 +292,13 @@ class ExpenseFormController: UITableViewController {
     @objc private func viewTapped(){
         tableView.endEditing(true)
     }
+    
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true)
+    }
 
-}
-
-extension ExpenseFormControllerDelegate{
-    func expenseFormControllerDidFinish(controller: ExpenseFormController) {}
 }
 
 extension ExpenseFormController: UIPickerViewDataSource{
@@ -326,7 +349,7 @@ extension ExpenseFormController: UIPickerViewDelegate{
                 content.secondaryText = newExpenseType.rawValue.capitalized
                 cell.contentConfiguration = content
             }
-      
+    
             if wasShowingGoals == isShowingGoals {
                 return
             }
@@ -397,4 +420,3 @@ extension ExpenseFormController: UITextFieldDelegate{
         }
     }
 }
-
