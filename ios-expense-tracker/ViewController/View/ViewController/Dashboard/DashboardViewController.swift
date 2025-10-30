@@ -594,26 +594,23 @@ class DashboardViewController: UIViewController {
                 print("Error: Could not find tapped goal with ID \(goalID)")
                 return
             }
-
-            let alert = UIAlertController(title: tappedGoal.name, message: "What would you like to do?", preferredStyle: .actionSheet)
             
-            alert.addAction(UIAlertAction(title: "Edit Goal", style: .default, handler: { _ in
-                let goalVC = SavingGoalFormController()
-                goalVC.delegate = self
-                goalVC.goalToEdit = tappedGoal
-                let navController = UINavigationController(rootViewController: goalVC)
-                self.present(navController, animated: true)
-            }))
+            showGoalDetail(for: tappedGoal)
+        }
+    
+    
+        private func showGoalDetail(for goal: SavingGoal) {
+            let allExpenses = expenseStore.loadExpenses()
             
-
-            alert.addAction(UIAlertAction(title: "Delete Goal", style: .destructive, handler: { _ in
-         
-                self.showDeleteConfirmation(for: tappedGoal)
-            }))
-  
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+            let goalTransactions = allExpenses.filter {
+                $0.type == .savings && $0.goalID == goal.id
+            }
             
-            present(alert, animated: true)
+            let detailVC = SavingGoalDetailViewController()
+            detailVC.goal = goal
+            detailVC.transactions = goalTransactions.sorted(by: { $0.date > $1.date }) 
+            
+            navigationController?.pushViewController(detailVC, animated: true)
         }
 
     private func showDeleteConfirmation(for goal: SavingGoal) {
@@ -624,7 +621,6 @@ class DashboardViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
        
             self.savingGoalStore.deleteSavingGoal(goal)
-          
         }))
         
         present(alert, animated: true)
@@ -678,7 +674,6 @@ extension DashboardViewController: ChartViewDelegate {
 extension DashboardViewController: BudgetFormControllerDelegate{
     func budgetFormController(didSave budget: Budget) {
         budgetStore.saveBudget(budget)
-      
     }
 }
 
@@ -688,23 +683,16 @@ extension DashboardViewController: BudgetFormControllerDelegate{
 extension DashboardViewController: SavingGoalFormControllerDelegate {
     
     func savingGoalFormController(_ controller: SavingGoalFormController, didSaveNew goal: SavingGoal) {
-      
         savingGoalStore.addSavingGoal(goal)
-       
         controller.dismiss(animated: true)
-     
     }
     
     func savingGoalFormController(_ controller: SavingGoalFormController, didUpdate goal: SavingGoal) {
-      
         savingGoalStore.updateSavingGoal(goal)
-        
         controller.dismiss(animated: true)
-      
     }
     
     func savingGoalFormControllerDidCancel(_ controller: SavingGoalFormController) {
-      
         controller.dismiss(animated: true)
     }
 }

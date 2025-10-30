@@ -48,6 +48,12 @@ class ExpenseTableViewCell: UITableViewCell {
         dateFormatter.timeStyle = .none
         expenseDateLabel.text = dateFormatter.string(from: expense.date)
         
+        if expense.type == .savings {
+            expenseAmountLabel.textColor = .systemGreen
+        } else {
+            expenseAmountLabel.textColor = .label
+        }
+        
     }
     
     private func setupUI(){
