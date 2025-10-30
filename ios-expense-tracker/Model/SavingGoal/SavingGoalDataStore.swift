@@ -110,5 +110,30 @@ class SavingGoalDataStore {
         }
         
     }
+    
+    func deleteAllSavingGoals() {
+            let fileManager = FileManager.default
+            
+            // 1. Check if the file exists
+            guard fileManager.fileExists(atPath: fileUrl.path) else {
+                print("Saving goals file does not exist, nothing to delete.")
+                // Still post a notification to clear the UI
+                NotificationCenter.default.post(name: .didUpdateSavingGoals, object: nil)
+                return
+            }
+            
+            // 2. Try to remove the file
+            do {
+                try fileManager.removeItem(at: fileUrl)
+                
+                // 3. Post notification on success
+                // Note: Your saveSavingGoals method already posts this, but it's
+                // good practice to post it here too for a delete operation.
+                NotificationCenter.default.post(name: .didUpdateSavingGoals, object: nil)
+                print("All saving goals deleted successfully.")
+            } catch {
+                print("Error deleting saving goals file: \(error.localizedDescription)")
+            }
+        }
 }
 

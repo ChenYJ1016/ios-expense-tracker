@@ -15,9 +15,6 @@ public class PieChartCategoryFormatter: ValueFormatter {
                                entry: ChartDataEntry,
                                dataSetIndex: Int,
                                viewPortHandler: ViewPortHandler?) -> String {
-        
-        // 'entry' is the PieChartDataEntry you created.
-        // We just return its label (the category name) instead of its value.
         if let pieEntry = entry as? PieChartDataEntry {
             return pieEntry.label ?? ""
         } else {

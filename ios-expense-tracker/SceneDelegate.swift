@@ -13,36 +13,39 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        let appearance = UINavigationBarAppearance()
-        
-        appearance.configureWithDefaultBackground()
-        appearance.backgroundColor = .systemBackground
-        appearance.shadowColor = .clear
             
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label, .font: UIFont.boldSystemFont(ofSize: 30)]
-
-        appearance.titleTextAttributes = [.foregroundColor: UIColor.label, .font: UIFont.systemFont(ofSize: 32)]
-
-//        UINavigationBar.appearance().prefersLargeTitles = true
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
+            let appearance = UINavigationBarAppearance()
             
-        UINavigationBar.appearance().tintColor = .systemGreen
-        
-        guard let windowScene = (scene as? UIWindowScene) else { return }
-        window = UIWindow(windowScene: windowScene)
-        ExpenseDataStore.shared.loadMockDataIfEmpty()
-        
-        let mainVC = MainTabBarController()
-        
-        window?.backgroundColor = .systemGroupedBackground
-        window?.rootViewController = mainVC
-        window?.makeKeyAndVisible()
-    }
+            appearance.configureWithOpaqueBackground() 
+            appearance.backgroundColor = .systemBackground
+            appearance.shadowColor = .clear
+                
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label, .font: UIFont.boldSystemFont(ofSize: 30)]
+            
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.label, .font: UIFont.systemFont(ofSize: 30, weight: .bold)]
+
+
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+            UINavigationBar.appearance().compactAppearance = appearance
+                
+            UINavigationBar.appearance().tintColor = .systemGreen
+            
+            
+            
+            guard let windowScene = (scene as? UIWindowScene) else { return }
+            window = UIWindow(windowScene: windowScene)            
+          
+            let storedValue = UserDefaults.standard.integer(forKey: "appAppearance")
+            let appearanceSetting = UIUserInterfaceStyle(rawValue: storedValue) ?? .unspecified
+            window?.overrideUserInterfaceStyle = appearanceSetting
+            
+            let mainVC = MainTabBarController()
+            
+            window?.backgroundColor = .systemGroupedBackground
+            window?.rootViewController = mainVC
+            window?.makeKeyAndVisible()
+        }
 
     func sceneDidDisconnect(_ scene: UIScene) {
         // Called as the scene is being released by the system.
