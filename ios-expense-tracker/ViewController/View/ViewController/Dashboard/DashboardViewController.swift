@@ -111,7 +111,7 @@ class DashboardViewController: UIViewController {
         
         chartView.drawHoleEnabled = true
         chartView.holeColor = .clear
-        chartView.holeRadiusPercent = 0.50
+        chartView.holeRadiusPercent = 0.60
         
         chartView.drawEntryLabelsEnabled = false
         
@@ -121,6 +121,38 @@ class DashboardViewController: UIViewController {
         chartView.legend.verticalAlignment = .bottom
         
         chartView.setExtraOffsets(left: 32, top: 0, right: 32, bottom: 0)
+        return chartView
+    }()
+    
+
+        
+    lazy var barChartView: BarChartView = {
+        let chartView = BarChartView()
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+        chartView.delegate = self
+        
+        chartView.drawBarShadowEnabled = false
+        chartView.drawValueAboveBarEnabled = true
+        chartView.pinchZoomEnabled = false
+        chartView.doubleTapToZoomEnabled = false
+        chartView.fitBars = true
+        
+        chartView.legend.enabled = false
+        let xAxis = chartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.drawGridLinesEnabled = false
+        xAxis.granularity = 1.0
+        let leftAxis = chartView.leftAxis
+        leftAxis.labelFont = .systemFont(ofSize: 10)
+        leftAxis.drawGridLinesEnabled = true
+        leftAxis.labelCount = 6
+        leftAxis.valueFormatter = YAxisValueFormatter()
+        leftAxis.axisMinimum = 0.0
+        
+        chartView.rightAxis.enabled = false
+        
+        chartView.isHidden = true
+        
         return chartView
     }()
     
@@ -438,6 +470,7 @@ class DashboardViewController: UIViewController {
         card.addSubview(titleLabel)
         card.addSubview(timeRangeSegmentedControl)
         card.addSubview(pieChartView)
+        card.addSubview(barChartView)
         
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
@@ -451,106 +484,187 @@ class DashboardViewController: UIViewController {
             pieChartView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             pieChartView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             pieChartView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
-            pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor)
+            pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor),
+            barChartView.topAnchor.constraint(equalTo: pieChartView.topAnchor),
+                        barChartView.leadingAnchor.constraint(equalTo: pieChartView.leadingAnchor),
+                        barChartView.trailingAnchor.constraint(equalTo: pieChartView.trailingAnchor),
+                        barChartView.bottomAnchor.constraint(equalTo: pieChartView.bottomAnchor)
         ])
         
         return card
     }
     
     private func refreshSpendingCardData(animated: Bool) {
-        let allExpenses = expenseStore.loadExpenses()
-        let selectedRange = timeRangeSegmentedControl.selectedSegmentIndex
-        
-        let calendar = Calendar.current
-        let now = Date()
-        
-        guard let startOfCurrentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
-            print("Error calculating start of month")
-            return
-        }
+            let allExpenses = expenseStore.loadExpenses()
+            let selectedRange = timeRangeSegmentedControl.selectedSegmentIndex
+            
+            let calendar = Calendar.current
+            let now = Date()
+            
+            guard let startOfCurrentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
+                print("Error calculating start of month")
+                return
+            }
 
-        let filteredExpenses: [Expense]
-        
-        if selectedRange == 0 {
-            filteredExpenses = allExpenses.filter { $0.date >= startOfCurrentMonth && $0.type != .savings }
-        } else {
-            filteredExpenses = allExpenses.filter { $0.date < startOfCurrentMonth && $0.type != .savings }
+            let filteredExpenses: [Expense]
+            
+            if selectedRange == 0 {
+                pieChartView.isHidden = false
+                barChartView.isHidden = true
+                
+                filteredExpenses = allExpenses.filter { $0.date >= startOfCurrentMonth && $0.type != .savings }
+                self.expensesForChart = filteredExpenses
+                updatePieChartData(filteredExpenses: filteredExpenses, animated: animated)
+                
+            } else {
+                pieChartView.isHidden = true
+                barChartView.isHidden = false
+                
+                filteredExpenses = allExpenses.filter { $0.date < startOfCurrentMonth && $0.type != .savings }
+                self.expensesForChart = []
+                updateBarChartData(filteredExpenses: filteredExpenses, animated: animated)
+            }
         }
-        
-        self.expensesForChart = filteredExpenses
-
-        guard !filteredExpenses.isEmpty else {
-            pieChartView.data = nil
-            let centerText = NSAttributedString(string: "No spending for this period.", attributes: [
-                .font: UIFont.systemFont(ofSize: 14, weight: .regular),
-                .foregroundColor: UIColor.secondaryLabel
-            ])
-            pieChartView.centerAttributedText = centerText
-            pieChartView.notifyDataSetChanged()
-            return
-        }
-
-        let groupedByCategory = Dictionary(grouping: filteredExpenses, by: { $0.type })
-        
-        let totalByCategory = groupedByCategory.mapValues { expenses in
-            expenses.reduce(Decimal(0)) { $0 + $1.amount }
-        }
-        
-        self.expensesByCategory = totalByCategory.reduce(into: [String: Double]()) { (result, group) in
-            let categoryName = group.key.rawValue
-            let totalAmount = group.value
-            result[categoryName] = (totalAmount as NSDecimalNumber).doubleValue
-        }
-        
-        let dataEntries: [PieChartDataEntry] = expensesByCategory.map { (category, amount) in
-            return PieChartDataEntry(value: amount, label: category)
-        }
-                
-        let dataSet = PieChartDataSet(entries: dataEntries)
-                
-        var colours = ChartColorTemplates.pastel()
-        colours.append(contentsOf: ChartColorTemplates.liberty())
-        colours.append(contentsOf: ChartColorTemplates.joyful())
-        dataSet.colors = colours
-                
-        dataSet.drawValuesEnabled = true
-        dataSet.valueTextColor = .label
-        dataSet.valueFont = .systemFont(ofSize: 10, weight: .semibold)
-                
-        dataSet.valueLinePart1OffsetPercentage = 0.8
-        dataSet.valueLinePart1Length = 0.5
-        dataSet.valueLinePart2Length = 0.6
-        dataSet.yValuePosition = .outsideSlice
-                
-        dataSet.valueFormatter = PieChartCategoryFormatter()
-        
-        let data = PieChartData(dataSet: dataSet)
-                
-        let total = expensesByCategory.values.reduce(0, +)
-        let totalString = CurrencyFormatter.shared.string(from: Decimal(total))
-        
-        let centerText = NSMutableAttributedString(string: "Total\n", attributes: [
-            .font: UIFont.systemFont(ofSize: 14, weight: .regular),
-            .foregroundColor: UIColor.secondaryLabel
-        ])
-        centerText.append(NSAttributedString(string: totalString, attributes: [
-            .font: UIFont.systemFont(ofSize: 18, weight: .bold),
-            .foregroundColor: UIColor.label
-        ]))
-        pieChartView.centerAttributedText = centerText
-                
-        pieChartView.data = data
-        
-        if animated {
-            pieChartView.animate(xAxisDuration: 1.0, easingOption: .easeOutQuad)
-        } else {
-            pieChartView.notifyDataSetChanged()
-        }
-    }
     
     // ---
     // MARK: - Data Logic & Selectors
     // ---
+    
+    private func updateBarChartData(filteredExpenses: [Expense], animated: Bool) {
+            
+            guard !filteredExpenses.isEmpty else {
+                barChartView.data = nil
+                barChartView.notifyDataSetChanged()
+                barChartView.noDataText = "No spending for this period."
+                return
+            }
+
+            let calendar = Calendar.current
+            let components: Set<Calendar.Component> = [.year, .month]
+            
+            let groupedByMonth = Dictionary(grouping: filteredExpenses) { (expense) -> DateComponents in
+                return calendar.dateComponents(components, from: expense.date)
+            }
+            
+            let monthlyTotals = groupedByMonth.mapValues { expenses in
+                expenses.reduce(Decimal(0)) { $0 + $1.amount }
+            }
+            
+            let sortedMonths = monthlyTotals.sorted { (first, second) -> Bool in
+                let firstDate = calendar.date(from: first.key)!
+                let secondDate = calendar.date(from: second.key)!
+                return firstDate < secondDate
+            }
+            
+            let recentMonths = sortedMonths
+            
+            var dataEntries: [BarChartDataEntry] = []
+            var monthLabels: [String] = []
+            
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "MMM"
+            for (index, monthData) in recentMonths.enumerated() {
+                let date = calendar.date(from: monthData.key)!
+                let monthName = dateFormatter.string(from: date)
+                
+                let amount = (monthData.value as NSDecimalNumber).doubleValue
+                
+                let entry = BarChartDataEntry(x: Double(index), y: amount)
+                dataEntries.append(entry)
+                monthLabels.append(monthName)
+            }
+            
+            let dataSet = BarChartDataSet(entries: dataEntries, label: "Monthly Spending")
+            dataSet.colors = ChartColorTemplates.material()
+            dataSet.valueFont = .systemFont(ofSize: 10)
+            
+            let valueFormatter = NumberFormatter()
+            valueFormatter.numberStyle = .currency
+            valueFormatter.currencySymbol = "$"
+            valueFormatter.maximumFractionDigits = 0
+            dataSet.valueFormatter = DefaultValueFormatter(formatter: valueFormatter)
+            
+            let data = BarChartData(dataSet: dataSet)
+            data.barWidth = 0.8
+            
+            barChartView.xAxis.valueFormatter = XAxisMonthFormatter(months: monthLabels)
+            
+            barChartView.data = data
+            
+            if animated {
+                barChartView.animate(yAxisDuration: 1.0, easingOption: .easeOutQuad)
+            } else {
+                barChartView.notifyDataSetChanged()
+            }
+        }
+    private func updatePieChartData(filteredExpenses: [Expense], animated: Bool) {
+            guard !filteredExpenses.isEmpty else {
+                pieChartView.data = nil
+                let centerText = NSAttributedString(string: "No spending for this period.", attributes: [
+                    .font: UIFont.systemFont(ofSize: 14, weight: .regular),
+                    .foregroundColor: UIColor.secondaryLabel
+                ])
+                pieChartView.centerAttributedText = centerText
+                pieChartView.notifyDataSetChanged()
+                return
+            }
+
+            let groupedByCategory = Dictionary(grouping: filteredExpenses, by: { $0.type })
+            
+            let totalByCategory = groupedByCategory.mapValues { expenses in
+                expenses.reduce(Decimal(0)) { $0 + $1.amount }
+            }
+            
+            self.expensesByCategory = totalByCategory.reduce(into: [String: Double]()) { (result, group) in
+                let categoryName = group.key.rawValue
+                let totalAmount = group.value
+                result[categoryName] = (totalAmount as NSDecimalNumber).doubleValue
+            }
+            
+            let dataEntries: [PieChartDataEntry] = expensesByCategory.map { (category, amount) in
+                return PieChartDataEntry(value: amount, label: category)
+            }
+                    
+            let dataSet = PieChartDataSet(entries: dataEntries)
+            var colours = ChartColorTemplates.pastel()
+            colours.append(contentsOf: ChartColorTemplates.liberty())
+            colours.append(contentsOf: ChartColorTemplates.joyful())
+            dataSet.colors = colours
+                    
+            dataSet.drawValuesEnabled = true
+            dataSet.valueTextColor = .label
+            dataSet.valueFont = .systemFont(ofSize: 10, weight: .semibold)
+                    
+            dataSet.valueLinePart1OffsetPercentage = 0.8
+            dataSet.valueLinePart1Length = 0.5
+            dataSet.valueLinePart2Length = 0.6
+            dataSet.yValuePosition = .outsideSlice
+                    
+            dataSet.valueFormatter = PieChartCategoryFormatter()
+            
+            let data = PieChartData(dataSet: dataSet)
+                    
+            let total = expensesByCategory.values.reduce(0, +)
+            let totalString = CurrencyFormatter.shared.string(from: Decimal(total))
+            
+            let centerText = NSMutableAttributedString(string: "Total\n", attributes: [
+                .font: UIFont.systemFont(ofSize: 14, weight: .regular),
+                .foregroundColor: UIColor.secondaryLabel
+            ])
+            centerText.append(NSAttributedString(string: totalString, attributes: [
+                .font: UIFont.systemFont(ofSize: 18, weight: .bold),
+                .foregroundColor: UIColor.label
+            ]))
+            pieChartView.centerAttributedText = centerText
+                    
+            pieChartView.data = data
+            
+            if animated {
+                pieChartView.animate(xAxisDuration: 1.0, easingOption: .easeOutQuad)
+            } else {
+                pieChartView.notifyDataSetChanged()
+            }
+        }
     
     @objc private func refreshDashboardData(animated: Bool) {
         refreshBudgetCardData()

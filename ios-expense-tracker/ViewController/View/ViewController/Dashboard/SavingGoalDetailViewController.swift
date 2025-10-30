@@ -18,11 +18,10 @@ class SavingGoalDetailViewController: UIViewController {
 
     // MARK: - UI Components
     
-    // --- New Card UI Properties ---
     private let goalProgressCardView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = .secondarySystemGroupedBackground // Card white color
+        view.backgroundColor = .secondarySystemGroupedBackground
         view.layer.cornerRadius = 12
         view.layer.shadowColor = UIColor.black.cgColor
         view.layer.shadowOpacity = 0.05
@@ -40,7 +39,7 @@ class SavingGoalDetailViewController: UIViewController {
     
     private let nameLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 20, weight: .bold) // Larger font
+        label.font = .systemFont(ofSize: 20, weight: .bold)
         label.textColor = .label
         return label
     }()
@@ -58,13 +57,12 @@ class SavingGoalDetailViewController: UIViewController {
         return pv
     }()
     
-    // --- Table View ---
     private lazy var tableView: UITableView = {
         let tv = UITableView(frame: .zero, style: .insetGrouped)
         tv.translatesAutoresizingMaskIntoConstraints = false
         tv.delegate = self
         tv.dataSource = self
-        tv.backgroundColor = .clear // Make table view background transparent
+        tv.backgroundColor = .clear
         return tv
     }()
 
@@ -91,7 +89,6 @@ class SavingGoalDetailViewController: UIViewController {
     private func setupGoalProgressCard() {
         view.addSubview(goalProgressCardView)
         
-        // Build the card's internal layout
         let nameIconStack = UIStackView(arrangedSubviews: [iconView, nameLabel])
         nameIconStack.axis = .horizontal
         nameIconStack.spacing = 16
@@ -105,18 +102,15 @@ class SavingGoalDetailViewController: UIViewController {
         goalProgressCardView.addSubview(mainVStack)
         
         NSLayoutConstraint.activate([
-            // Constrain the card to the top
             goalProgressCardView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             goalProgressCardView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             goalProgressCardView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             
-            // Constrain the internal stack view with padding
             mainVStack.topAnchor.constraint(equalTo: goalProgressCardView.topAnchor, constant: 20),
             mainVStack.leadingAnchor.constraint(equalTo: goalProgressCardView.leadingAnchor, constant: 20),
             mainVStack.trailingAnchor.constraint(equalTo: goalProgressCardView.trailingAnchor, constant: -20),
             mainVStack.bottomAnchor.constraint(equalTo: goalProgressCardView.bottomAnchor, constant: -20),
             
-            // Icon and progress bar sizing
             iconView.widthAnchor.constraint(equalToConstant: 36),
             iconView.heightAnchor.constraint(equalToConstant: 36),
             progressBar.heightAnchor.constraint(equalToConstant: 16)
@@ -124,14 +118,12 @@ class SavingGoalDetailViewController: UIViewController {
     }
     
     private func setupTableView() {
-        // Register your custom cell
         tableView.register(ExpenseTableViewCell.self, forCellReuseIdentifier: ExpenseTableViewCell.identifier)
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "emptyCell")
         
         view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            // Constrain the table view *below* the card
             tableView.topAnchor.constraint(equalTo: goalProgressCardView.bottomAnchor, constant: 10),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -183,10 +175,8 @@ class SavingGoalDetailViewController: UIViewController {
         }
     }
     
-    // --- (Navbar and Action methods are unchanged) ---
     
     private func setupNavBarButtons() {
-        // ... (Your existing code is perfect)
         let moreButton = UIBarButtonItem(
              image: UIImage(systemName: "ellipsis.circle"),
              style: .plain,
@@ -207,7 +197,6 @@ class SavingGoalDetailViewController: UIViewController {
     }
     
     private func editGoalTapped() {
-         // ... (Your existing code is perfect)
         guard let goal = self.goal else { return }
         
         let goalVC = SavingGoalFormController()
@@ -218,7 +207,6 @@ class SavingGoalDetailViewController: UIViewController {
     }
 
     private func deleteGoalTapped() {
-         // ... (Your existing code is perfect)
         guard let goal = self.goal else { return }
         
         let alert = UIAlertController(title: "Delete \(goal.name)?", message: "Are you sure you want to delete this goal? This action cannot be undone.", preferredStyle: .alert)
@@ -238,19 +226,18 @@ class SavingGoalDetailViewController: UIViewController {
 extension SavingGoalDetailViewController: UITableViewDelegate, UITableViewDataSource {
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 1 // Only one section for transactions
+        return 1
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if transactions.isEmpty {
-            return 1 // Show a single "No transactions" cell
+            return 1
         }
         return transactions.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        // Handle the empty state
         if transactions.isEmpty {
             let cell = tableView.dequeueReusableCell(withIdentifier: "emptyCell", for: indexPath)
             var content = cell.defaultContentConfiguration()
@@ -262,16 +249,13 @@ extension SavingGoalDetailViewController: UITableViewDelegate, UITableViewDataSo
             return cell
         }
         
-        // Handle a real transaction
         guard let cell = tableView.dequeueReusableCell(withIdentifier: ExpenseTableViewCell.identifier, for: indexPath) as? ExpenseTableViewCell else {
-            // Fallback in case dequeuing fails
             return UITableViewCell()
         }
         
         let transaction = transactions[indexPath.row]
         cell.configure(with: transaction)
-        cell.selectionStyle = .none // Or .default if you want to let them edit
-        
+        cell.selectionStyle = .none
         return cell
     }
     
@@ -281,7 +265,6 @@ extension SavingGoalDetailViewController: UITableViewDelegate, UITableViewDataSo
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        // You could add navigation to edit the specific transaction here
     }
 }
 
@@ -294,17 +277,13 @@ extension SavingGoalDetailViewController: SavingGoalFormControllerDelegate {
     }
     
     func savingGoalFormController(_ controller: SavingGoalFormController, didUpdate goal: SavingGoal) {
-        // 1. Save the updated goal
         savingGoalStore.updateSavingGoal(goal)
         
-        // 2. Update this screen's local data
         self.goal = goal
         
-        // 3. Refresh this screen's UI
         self.title = goal.name
-        self.refreshGoalProgressData() // Refresh the new card
+        self.refreshGoalProgressData()
         
-        // 4. Dismiss the edit form
         controller.dismiss(animated: true)
     }
     
