@@ -125,7 +125,7 @@ class SavingGoalFormController: UITableViewController {
     // MARK: - Table view data source
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return 2 // Section 1: Name, Amount. Section 2: Icon
+        return 2
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -139,11 +139,9 @@ class SavingGoalFormController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         if indexPath.section == 0 {
-            // --- Section 0: Name and Amount ---
             let cell = tableView.dequeueReusableCell(withIdentifier: textFieldCellIdentifier, for: indexPath) as! TextFieldCell
             
             if indexPath.row == 0 {
-                // Goal Name
                 cell.textField.placeholder = "Goal Name (e.g., 'New Car')"
                 cell.textField.text = goalName
                 cell.textField.keyboardType = .default
@@ -152,24 +150,19 @@ class SavingGoalFormController: UITableViewController {
                     self?.goalName = newText ?? ""
                 }
             } else {
-                // Target Amount
                 cell.textField.placeholder = "How much to save?"
                 cell.textField.keyboardType = .decimalPad
                 cell.textField.delegate = self
                 
-                // Pre-fill with formatted currency
-                // (MODIFIED) Always format here, textFieldDidBeginEditing will handle showing raw number
                 cell.textField.text = CurrencyFormatter.shared.string(from: targetAmount)
             }
             return cell
             
         } else {
-            // --- Section 1: Icon Picker ---
             let cell = tableView.dequeueReusableCell(withIdentifier: pickerViewCellIdentifier, for: indexPath) as! PickerViewCell
             cell.pickerView.dataSource = self
             cell.pickerView.delegate = self
             
-            // Select the row for the current icon
             if let selectedRow = iconData.firstIndex(where: { $0.1 == selectedIconName }) {
                 cell.pickerView.selectRow(selectedRow, inComponent: 0, animated: false)
             }
@@ -193,11 +186,11 @@ extension SavingGoalFormController: UIPickerViewDataSource, UIPickerViewDelegate
     }
     
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        return iconData[row].0 // Show the name (e.g., "Car")
+        return iconData[row].0
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        selectedIconName = iconData[row].1 // Save the icon name (e.g., "car.fill")
+        selectedIconName = iconData[row].1
     }
 }
 
@@ -209,14 +202,12 @@ extension SavingGoalFormController: UITextFieldDelegate {
         return false
     }
     
-    // Use the same robust currency handling as your Expense form
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         if textField.keyboardType == .decimalPad {
             guard let result = CurrencyFormatter.shared.formattedReplacement(currentText: textField.text ?? "", range: range, replacement: string) else {
                 return false
             }
             textField.text = result.formatted
-            // Update the model property directly here
             self.targetAmount = result.decimal ?? 0
             return false
         }
@@ -228,18 +219,14 @@ extension SavingGoalFormController: UITextFieldDelegate {
             if targetAmount == 0 {
                 textField.text = ""
             } else {
-                // Show the plain number for easier editing
                 textField.text = "\(targetAmount)"
             }
         }
     }
 
-    // (FIXED) This only needs to format the text field,
-    // as self.targetAmount is already updated in shouldChangeCharactersIn
     func textFieldDidEndEditing(_ textField: UITextField) {
         if textField.keyboardType == .decimalPad {
-            // Re-format the text field to show the currency string
-            // using the already-updated self.targetAmount
+
             textField.text = CurrencyFormatter.shared.string(from: self.targetAmount)
         }
     }

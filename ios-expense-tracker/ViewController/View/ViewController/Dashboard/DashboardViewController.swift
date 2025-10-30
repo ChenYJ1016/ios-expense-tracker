@@ -8,7 +8,6 @@
 import UIKit
 import DGCharts
 
-// A custom gesture recognizer to hold the Goal ID
 fileprivate class GoalTapGestureRecognizer: UITapGestureRecognizer {
     var goalID: UUID?
 }
@@ -132,10 +131,8 @@ class DashboardViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Overview"
-        navigationItem.largeTitleDisplayMode = .never // Your "sticky title" fix
         view.backgroundColor = .systemGroupedBackground
         
-        // Listen for ALL data updates
         NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: .didUpdateBudget, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: .didUpdateSavingGoals, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: .didUpdateExpenses, object: nil)
@@ -171,11 +168,10 @@ class DashboardViewController: UIViewController {
             contentStackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
             contentStackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             contentStackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -16),
-            // This is key: make the stack view's width match the scroll view's frame
             contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
         ])
         
-        // Now, build the cards and add them to the stack view
+        
         buildDashboardCards()
     }
     
@@ -188,7 +184,6 @@ class DashboardViewController: UIViewController {
         contentStackView.addArrangedSubview(savingsCard)
         contentStackView.addArrangedSubview(spendingCard)
         
-        // Add a flexible spacer at the bottom
         let spacer = UIView()
         spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         contentStackView.addArrangedSubview(spacer)
@@ -300,13 +295,11 @@ class DashboardViewController: UIViewController {
         titleLabel.font = .systemFont(ofSize: 12, weight: .bold)
         titleLabel.textColor = .secondaryLabel
         
-        // Horizontal stack for Title and Add button
         let hStack = UIStackView(arrangedSubviews: [titleLabel, addGoalButton])
         hStack.translatesAutoresizingMaskIntoConstraints = false
         hStack.axis = .horizontal
         hStack.distribution = .equalSpacing
         
-        // Main vertical stack for the card
         let mainVStack = UIStackView(arrangedSubviews: [hStack, savingGoalsStackView])
         mainVStack.translatesAutoresizingMaskIntoConstraints = false
         mainVStack.axis = .vertical
@@ -324,10 +317,8 @@ class DashboardViewController: UIViewController {
         return card
     }
     
-    // (UPDATED) This function now contains the "Completed State" logic
     private func createGoalRow(goal: SavingGoal) -> UIView {
         
-        // Check if the goal is completed
         let isCompleted = goal.savedAmount >= goal.targetAmount
         
         let iconView = UIImageView()
@@ -345,30 +336,23 @@ class DashboardViewController: UIViewController {
         progressBar.trackTintColor = .systemGray5
         
         if isCompleted {
-            // --- THIS IS YOUR "COMPLETED" STATE ---
-            
-            // 1. Icon: Use a checkmark
             iconView.image = UIImage(systemName: "checkmark.circle.fill")
             iconView.tintColor = .systemGreen
             
-            // 2. Name: Add a strikethrough (as you suggested!)
             let attributedName = NSAttributedString(
                 string: goal.name,
                 attributes: [.strikethroughStyle: NSUnderlineStyle.single.rawValue]
             )
             nameLabel.attributedText = attributedName
-            nameLabel.textColor = .secondaryLabel // Fade it out
+            nameLabel.textColor = .secondaryLabel
             
-            // 3. Progress Text: Show a "Completed" message
             let total = CurrencyFormatter.shared.string(from: goal.targetAmount)
             progressLabel.text = "Completed! \(total)"
             
-            // 4. Progress Bar: Fill it and make it green
             progressBar.progress = 1.0
             progressBar.progressTintColor = .systemGreen
             
         } else {
-            // --- THIS IS YOUR NORMAL, "IN-PROGRESS" STATE ---
             
             iconView.image = UIImage(systemName: goal.iconName)
             iconView.tintColor = .systemBlue
@@ -388,7 +372,6 @@ class DashboardViewController: UIViewController {
             progressBar.progressTintColor = .systemBlue
         }
 
-        // Layout code
         let labelStack = UIStackView(arrangedSubviews: [nameLabel, progressLabel, progressBar])
         labelStack.axis = .vertical
         labelStack.spacing = 4
@@ -408,18 +391,14 @@ class DashboardViewController: UIViewController {
         return hStack
     }
 
-    // (MODIFIED) This function now adds tap gestures
     private func refreshSavingGoalsCardData() {
-        // 1. Clear all old goal rows
         for view in savingGoalsStackView.arrangedSubviews {
             savingGoalsStackView.removeArrangedSubview(view)
             view.removeFromSuperview()
         }
         
-        // 2. Load the goals
         let goals = savingGoalStore.loadSavingGoals()
         
-        // 3. Add new rows
         if goals.isEmpty {
             let label = UILabel()
             label.text = "Tap the + to add a saving goal."
@@ -430,13 +409,12 @@ class DashboardViewController: UIViewController {
         } else {
             for goal in goals {
                 let goalRow = createGoalRow(goal: goal)
-                
-                // --- Make the row tappable ---
+     
                 goalRow.isUserInteractionEnabled = true
                 let tap = GoalTapGestureRecognizer(target: self, action: #selector(goalTapped))
-                tap.goalID = goal.id // Pass the ID
+                tap.goalID = goal.id
                 goalRow.addGestureRecognizer(tap)
-                // ---
+             
                 
                 savingGoalsStackView.addArrangedSubview(goalRow)
             }
@@ -457,27 +435,23 @@ class DashboardViewController: UIViewController {
         titleLabel.textColor = .secondaryLabel
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        // Add components to the card
         card.addSubview(titleLabel)
         card.addSubview(timeRangeSegmentedControl)
         card.addSubview(pieChartView)
         
         NSLayoutConstraint.activate([
-            // Title
             titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             
-            // Segmented Control
             timeRangeSegmentedControl.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             timeRangeSegmentedControl.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             timeRangeSegmentedControl.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             
-            // Pie Chart
             pieChartView.topAnchor.constraint(equalTo: timeRangeSegmentedControl.bottomAnchor, constant: 16),
             pieChartView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             pieChartView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             pieChartView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
-            pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor) // Keep aspect ratio
+            pieChartView.heightAnchor.constraint(equalTo: pieChartView.widthAnchor)
         ])
         
         return card
@@ -497,9 +471,9 @@ class DashboardViewController: UIViewController {
 
         let filteredExpenses: [Expense]
         
-        if selectedRange == 0 { // Current Month
+        if selectedRange == 0 {
             filteredExpenses = allExpenses.filter { $0.date >= startOfCurrentMonth && $0.type != .savings }
-        } else { // Previous Months
+        } else {
             filteredExpenses = allExpenses.filter { $0.date < startOfCurrentMonth && $0.type != .savings }
         }
         
@@ -601,16 +575,14 @@ class DashboardViewController: UIViewController {
         present(navController, animated: true, completion: nil)
     }
     
-    // (MODIFIED) This now presents the form correctly
     private func addGoalTapped() {
         let goalVC = SavingGoalFormController()
         goalVC.delegate = self
-        goalVC.goalToEdit = nil // Make sure it's in "Add Mode"
+        goalVC.goalToEdit = nil
         let navController = UINavigationController(rootViewController: goalVC)
         present(navController, animated: true, completion: nil)
     }
     
-    // --- (NEW) Action Methods for Edit/Delete ---
     
     @objc private func goalTapped(sender: GoalTapGestureRecognizer) {
             guard let goalID = sender.goalID else {
@@ -618,53 +590,46 @@ class DashboardViewController: UIViewController {
                 return
             }
             
-            // (FIXED) Load all goals and find the one that was tapped
             guard let tappedGoal = savingGoalStore.loadSavingGoals().first(where: { $0.id == goalID }) else {
                 print("Error: Could not find tapped goal with ID \(goalID)")
                 return
             }
 
-            // Create the Action Sheet
             let alert = UIAlertController(title: tappedGoal.name, message: "What would you like to do?", preferredStyle: .actionSheet)
             
-            // --- EDIT ACTION ---
             alert.addAction(UIAlertAction(title: "Edit Goal", style: .default, handler: { _ in
                 let goalVC = SavingGoalFormController()
                 goalVC.delegate = self
-                goalVC.goalToEdit = tappedGoal // <-- Pass the goal to the form
+                goalVC.goalToEdit = tappedGoal
                 let navController = UINavigationController(rootViewController: goalVC)
                 self.present(navController, animated: true)
             }))
             
-            // --- DELETE ACTION ---
+
             alert.addAction(UIAlertAction(title: "Delete Goal", style: .destructive, handler: { _ in
-                // Show a confirmation before deleting
+         
                 self.showDeleteConfirmation(for: tappedGoal)
             }))
-            
-            // --- CANCEL ACTION ---
+  
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
             
-            // Show the menu
             present(alert, animated: true)
         }
 
-    // (NEW) Helper for the "Delete" action
     private func showDeleteConfirmation(for goal: SavingGoal) {
         let alert = UIAlertController(title: "Delete \(goal.name)?", message: "Are you sure you want to delete this goal? This action cannot be undone.", preferredStyle: .alert)
         
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         
         alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
-            // Tell the store to delete it
+       
             self.savingGoalStore.deleteSavingGoal(goal)
-            // The store's notification will handle the refresh!
+          
         }))
         
         present(alert, animated: true)
     }
     
-    // ---
     
     private func loadSavedData(){
         if budgetStore.loadBudget() != nil{
@@ -713,7 +678,7 @@ extension DashboardViewController: ChartViewDelegate {
 extension DashboardViewController: BudgetFormControllerDelegate{
     func budgetFormController(didSave budget: Budget) {
         budgetStore.saveBudget(budget)
-        // No need to call refresh, notification will handle it
+      
     }
 }
 
@@ -723,23 +688,23 @@ extension DashboardViewController: BudgetFormControllerDelegate{
 extension DashboardViewController: SavingGoalFormControllerDelegate {
     
     func savingGoalFormController(_ controller: SavingGoalFormController, didSaveNew goal: SavingGoal) {
-        // Tell the store to save it
+      
         savingGoalStore.addSavingGoal(goal)
-        // Dismiss the form
+       
         controller.dismiss(animated: true)
-        // The notification from the store will trigger the UI refresh
+     
     }
     
     func savingGoalFormController(_ controller: SavingGoalFormController, didUpdate goal: SavingGoal) {
-        // Tell the store to update it
+      
         savingGoalStore.updateSavingGoal(goal)
-        // Dismiss the form
+        
         controller.dismiss(animated: true)
-        // The notification from the store will trigger the UI refresh
+      
     }
     
     func savingGoalFormControllerDidCancel(_ controller: SavingGoalFormController) {
-        // Just dismiss the form
+      
         controller.dismiss(animated: true)
     }
 }

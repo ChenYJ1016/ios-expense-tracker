@@ -44,11 +44,9 @@ class ListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Do any additional setup after loading the view.
         view.backgroundColor = .systemBackground
         title = "Expenses"
         
-        // (NEW) Add observer to listen for data changes from any source
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(dataDidChange),
@@ -68,7 +66,6 @@ class ListViewController: UIViewController {
         
     }
     
-    // (NEW) Remove the observer
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -126,7 +123,7 @@ class ListViewController: UIViewController {
             dateFilterView.isHidden = true
             
             NSLayoutConstraint.activate([
-                dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor), // (MODIFIED) Changed from view.topAnchor
+                dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
                 dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
             ])
@@ -188,17 +185,13 @@ class ListViewController: UIViewController {
     
     // MARK: Helper
     
-    // (NEW) This function is called by the Notification observer
     @objc private func dataDidChange() {
-        // 1. Reload the "source of truth"
         allExpenses = store.loadExpenses()
         
-        // 2. Re-apply the snapshot
         applySnapshot()
     }
     
     @objc private func addNewExpense(){
-        // add new expense
         let addVC = ExpenseFormController()
         addVC.delegate = self
         let navController = UINavigationController(rootViewController: addVC)
@@ -235,7 +228,6 @@ class ListViewController: UIViewController {
 extension ListViewController{
     private func setupDiffableDataSource() {
         dataSource = UITableViewDiffableDataSource<ExpenseType, Expense>(tableView: expenseTableView) {
-            // Add the explicit type for 'item' here
             tableView, indexPath, item in
             
             guard let cell = tableView.dequeueReusableCell(withIdentifier: ExpenseTableViewCell.identifier, for: indexPath) as? ExpenseTableViewCell else {
@@ -309,7 +301,6 @@ extension ListViewController: UITableViewDelegate{
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
 
         guard let expenseToDelete = dataSource.itemIdentifier(for: indexPath) else { return }
-        // (MODIFIED) Tell the store to delete. The notification will handle the snapshot update.
         store.deleteExpense(expenseToDelete)
     }
     
@@ -319,7 +310,6 @@ extension ListViewController: UITableViewDelegate{
         guard let expense = dataSource.itemIdentifier(for: indexPath) else { return nil }
 
         let delete = UIContextualAction(style: .destructive, title: "Delete") { _,_,done in
-            // (MODIFIED) Tell the store to delete. The notification will handle the snapshot update.
             self.store.deleteExpense(expense)
             done(true)
         }
@@ -330,19 +320,17 @@ extension ListViewController: UITableViewDelegate{
     }
 }
 
-// (MODIFIED) Updated to use the new delegate protocol
+
 extension ListViewController: ExpenseFormControllerDelegate{
     func expenseFormControllerDidFinish(controller: ExpenseFormController) {
-        // The delegate's only job is to dismiss the form.
-        // The notification observer (dataDidChange) will handle refreshing the data.
+
         controller.dismiss(animated: true)
     }
 }
 
 extension ListViewController: ExpenseDetailViewControllerDelegate{
     func didFinishEditing(expense updatedExpense: Expense) {
-        // (MODIFIED) Tell the store to update.
-        // The notification observer (dataDidChange) will handle the refresh.
+     
         store.updateExpense(updatedExpense)
     }
 }

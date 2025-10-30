@@ -69,32 +69,22 @@ class BudgetFormController: UIViewController {
     }
     
     private func setupUI(){
-        // 1. Add ScrollView to the main view
         view.addSubview(scrollView)
         
-        // 2. Add ContentStackView to the ScrollView
         scrollView.addSubview(contentStackView)
         
-        // 3. Add components to the ContentStackView
         contentStackView.addArrangedSubview(overviewContainerView)
         
-        // 4. Set constraints
         NSLayoutConstraint.activate([
-            // ScrollView constraints (pins to safe area)
+        
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            
-            // ContentStackView constraints
-            // Pins to scroll view's content area
             contentStackView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             contentStackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentStackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             contentStackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            
-            // This is key: ContentStackView's width must equal the scroll view's frame width
-            // This prevents horizontal scrolling.
             contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
             
         ])
@@ -108,14 +98,14 @@ class BudgetFormController: UIViewController {
         
         overviewContainerView.addSubview(stackView)
         
-        // Create and configure form fields
+
         let incomeTitle = createTitleLabel(with: "Your Monthly Income")
         incomeTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
-//        incomeTextField.delegate = self
+
         
         let goalTitle = createTitleLabel(with: "Saving goal this month")
         savingGoalTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
-//        savingGoalTextField.delegate = self
+
         
         let remainingTitle = createTitleLabel(with: "Your budget for this month")
         remainingAmountLabel = createAmountLabel(with: "$0.00")
@@ -133,7 +123,7 @@ class BudgetFormController: UIViewController {
         stackView.addArrangedSubview(remainingTitle)
         stackView.addArrangedSubview(remainingAmountLabel)
         
-        // Pin the stackView to its container
+
         NSLayoutConstraint.activate([
             stackView.topAnchor.constraint(equalTo: overviewContainerView.topAnchor),
             stackView.bottomAnchor.constraint(equalTo: overviewContainerView.bottomAnchor),

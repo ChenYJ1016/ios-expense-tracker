@@ -15,7 +15,6 @@ class RoundedProgressView: UIProgressView {
         self.cornerRadius = cornerRadius
         super.init(frame: .zero)
         
-        // Round the outer track
         layer.cornerRadius = cornerRadius
         clipsToBounds = true
     }
