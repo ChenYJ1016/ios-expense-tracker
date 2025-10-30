@@ -1,5 +1,5 @@
 //
-//  ExpenseFormViewController.swift
+//  ExpenseFormController.swift
 //  ios-expense-tracker
 //
 //  Created by James Chen on 10/10/25.
@@ -43,7 +43,6 @@ class ExpenseFormController: UITableViewController {
         super.viewDidLoad()
         
         loadSavingGoals()
-        
         configureForEditing()
         
         tableView.register(TextFieldCell.self, forCellReuseIdentifier: textFieldCellIdentifier)
@@ -87,12 +86,10 @@ class ExpenseFormController: UITableViewController {
     }
     
     @objc private func saveTapped(){
-
         view.endEditing(true)
         
         if var expenseToUpdate = expense {
-            
-            let originalGoadID = expenseToUpdate.goalID
+            let originalGoalID = expenseToUpdate.goalID
             let originalAmount = expenseToUpdate.amount
             
             expenseToUpdate.name = expenseName
@@ -100,17 +97,17 @@ class ExpenseFormController: UITableViewController {
             expenseToUpdate.type = expenseType
             expenseToUpdate.amount = expenseAmount
             
-            if expenseType == .savings{
+            if expenseType == .savings {
                 expenseToUpdate.goalID = selectedGoal?.id
-            }else{
+            } else {
                 expenseToUpdate.goalID = nil
             }
             
-            expenseStore.updateExpense(expenseToUpdate, originalAmount: originalAmount, originalGoalID: originalGoadID)
+            expenseStore.updateExpense(expenseToUpdate, originalAmount: originalAmount, originalGoalID: originalGoalID)
             
         } else {
-            
             let newGoalID = (expenseType == .savings) ? selectedGoal?.id : nil
+            
             let newExpense = Expense(
                 name: expenseName,
                 date: expenseDate,
@@ -120,17 +117,6 @@ class ExpenseFormController: UITableViewController {
             )
             
             expenseStore.addExpense(newExpense)
-            
-//            if newExpense.type == .savings {
-//                if availableGoals.isEmpty {
-//                    print("User saved a 'Savings' expense but has no goals set up.")
-//                }
-//                else if let goalToUpdate = self.selectedGoal {
-//                    savingGoalStore.add(amount: newExpense.amount, to: goalToUpdate)
-//                } else {
-//                    print("Error: Savings expense saved but no goal was selected.")
-//                }
-//            }
         }
         
         delegate?.expenseFormControllerDidFinish(controller: self)
@@ -147,18 +133,15 @@ class ExpenseFormController: UITableViewController {
     }
     
     // MARK: - Table view data source
-    
+
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         
         if indexPath.section == 0 {
-            if indexPath.row == 2 {
-                return 180
-            }
+            if indexPath.row == 2 { return 180 }
+            
             if indexPath.row == 3 || indexPath.row == 4 {
                 if expenseType == .savings && !availableGoals.isEmpty {
-                    if indexPath.row == 4 {
-                        return 180
-                    }
+                    if indexPath.row == 4 { return 180 }
                     return UITableView.automaticDimension
                 } else {
                     return 0
@@ -188,9 +171,9 @@ class ExpenseFormController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-            case 0: return 5 // name, type, type picker, goal, goal picker
-            case 1: return 1 // date picker
-            case 2: return 1 // amount
+            case 0: return 5
+            case 1: return 1
+            case 2: return 1
             default: return 0
         }
     }
@@ -239,11 +222,7 @@ class ExpenseFormController: UITableViewController {
                     content.secondaryText = selectedGoal?.name ?? "None"
                 }
                 cell.contentConfiguration = content
-                
-                let isHidden = (expenseType != .savings || availableGoals.isEmpty)
-                cell.isHidden = isHidden
-                cell.contentView.isHidden = isHidden
-                
+                                
                 return cell
 
             case (0, 4):
@@ -255,11 +234,7 @@ class ExpenseFormController: UITableViewController {
                 if let goal = selectedGoal, let selectedRow = availableGoals.firstIndex(of: goal) {
                     cell.pickerView.selectRow(selectedRow, inComponent: 0, animated: false)
                 }
-                
-                let isHidden = (expenseType != .savings || availableGoals.isEmpty)
-                cell.isHidden = isHidden
-                cell.contentView.isHidden = isHidden
-                
+                                
                 return cell
 
             case (1, 0):
@@ -333,24 +308,50 @@ extension ExpenseFormController: UIPickerViewDelegate{
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         
         if pickerView.tag == typePickerTag {
-            self.expenseType = ExpenseType.allCases[row]
             
-            let typeCellIndexPath = IndexPath(row: 1, section: 0)
+            let oldExpenseType = self.expenseType
+            let newExpenseType = ExpenseType.allCases[row]
+            self.expenseType = newExpenseType
             
-            let goalLabelIndexPath = IndexPath(row: 3, section: 0)
-            let goalPickerIndexPath = IndexPath(row: 4, section: 0)
-
-            tableView.reloadSections(IndexSet(integer: 0), with: .automatic)
+            let wasShowingGoals = (oldExpenseType == .savings && !availableGoals.isEmpty)
+            let isShowingGoals = (newExpenseType == .savings && !availableGoals.isEmpty)
             
-            if self.expenseType == .savings {
+            if isShowingGoals && self.selectedGoal == nil {
                 self.selectedGoal = availableGoals.first
-                tableView.reloadRows(at: [goalLabelIndexPath], with: .none)
+            }
+
+            if let cell = tableView.cellForRow(at: IndexPath(row: 1, section: 0)) {
+                var content = cell.defaultContentConfiguration()
+                content.text = "Type"
+                content.secondaryText = newExpenseType.rawValue.capitalized
+                cell.contentConfiguration = content
+            }
+      
+            if wasShowingGoals == isShowingGoals {
+                return
             }
             
+            tableView.beginUpdates()
+            
+            if isShowingGoals {
+                if let cell = tableView.cellForRow(at: IndexPath(row: 3, section: 0)) {
+                    var content = cell.defaultContentConfiguration()
+                    content.text = "Goal"
+                    content.secondaryText = self.selectedGoal?.name ?? "None"
+                    cell.contentConfiguration = content
+                }
+            }
+            
+            tableView.endUpdates()
+
+            if isShowingGoals {
+                tableView.reloadRows(at: [IndexPath(row: 4, section: 0)], with: .none)
+            }
+
+
         } else {
             if !availableGoals.isEmpty {
                 self.selectedGoal = availableGoals[row]
-                
                 let goalCellIndexPath = IndexPath(row: 3, section: 0)
                 tableView.reloadRows(at: [goalCellIndexPath], with: .none)
             }
@@ -380,6 +381,20 @@ extension ExpenseFormController: UITextFieldDelegate{
         return true
     }
     
-   
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if textField.keyboardType == .decimalPad {
+            if expenseAmount == 0 {
+                textField.text = ""
+            } else {
+                textField.text = "\(expenseAmount)"
+            }
+        }
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        if textField.keyboardType == .decimalPad {
+            textField.text = CurrencyFormatter.shared.string(from: self.expenseAmount)
+        }
+    }
 }
 
