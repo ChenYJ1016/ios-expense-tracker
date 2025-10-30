@@ -47,7 +47,6 @@ class ListViewController: UIViewController {
         view.backgroundColor = .systemBackground
         title = "Expenses"
         
-        // Add observer to listen for data changes from any source
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(dataDidChange),
@@ -232,7 +231,6 @@ class ListViewController: UIViewController {
         }
     }
     
-    // (NEW) This function now holds the alert logic
     private func showDeleteConfirmationAlert(for expense: Expense) {
         let alert = UIAlertController(
             title: "Delete Expense?",
@@ -240,17 +238,13 @@ class ListViewController: UIViewController {
             preferredStyle: .alert
         )
 
-        // "Delete" Action
         alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
-            // This is the logic that used to be in the swipe action.
-            // Tell the store to delete. The notification will handle the refresh.
+         
             self.store.deleteExpense(expense)
         }))
 
-        // "Cancel" Action
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
 
-        // Present the alert
         self.present(alert, animated: true)
     }
 }
@@ -322,27 +316,21 @@ extension ListViewController: UITableViewDelegate{
         return 85.0
     }
     
-    // (MODIFIED) This now calls the alert function
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             guard let expenseToDelete = dataSource.itemIdentifier(for: indexPath) else { return }
-            // Show the alert instead of deleting directly
             showDeleteConfirmationAlert(for: expenseToDelete)
         }
     }
     
-    // (MODIFIED) This now calls the alert function
     func tableView(_ tableView: UITableView,
                    trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath)
     -> UISwipeActionsConfiguration? {
         guard let expense = dataSource.itemIdentifier(for: indexPath) else { return nil }
 
         let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _,_,done in
-            // 1. Show the confirmation alert
             self?.showDeleteConfirmationAlert(for: expense)
             
-            // 2. Call done(true) to close the swipe action row
-            // so the user isn't left in a weird state.
             done(true)
         }
         

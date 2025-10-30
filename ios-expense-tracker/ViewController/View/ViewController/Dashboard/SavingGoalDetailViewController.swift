@@ -71,7 +71,7 @@ class SavingGoalDetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        title = goal?.name ?? "Saving Goal"
+        title =  "Saving Goal"
         view.backgroundColor = .systemGroupedBackground
         
         setupUI()
