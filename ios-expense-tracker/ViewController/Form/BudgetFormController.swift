@@ -7,7 +7,7 @@
 
 import UIKit
 
-protocol BudgetFormControllerDelegate: AnyObject{
+protocol BudgetFormControllerDelegate: AnyObject {
     func budgetFormController(didSave budget: Budget)
 }
 
@@ -60,15 +60,13 @@ class BudgetFormController: UIViewController {
     
     // MARK: - UI Setup
     
-    private func setupNavigationItems(){
-        
-        
+    private func setupNavigationItems() {
         let saveIcon = UIImage(systemName: "checkmark")
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelTapped))
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: saveIcon, style: .prominent, target: self, action: #selector(savedTapped))
     }
     
-    private func setupUI(){
+    private func setupUI() {
         view.addSubview(scrollView)
         
         scrollView.addSubview(contentStackView)
@@ -76,7 +74,6 @@ class BudgetFormController: UIViewController {
         contentStackView.addArrangedSubview(overviewContainerView)
         
         NSLayoutConstraint.activate([
-        
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -86,7 +83,6 @@ class BudgetFormController: UIViewController {
             contentStackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             contentStackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
             contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
-            
         ])
     }
     
@@ -98,20 +94,17 @@ class BudgetFormController: UIViewController {
         
         overviewContainerView.addSubview(stackView)
         
-
         let incomeTitle = createTitleLabel(with: "Your Monthly Income")
         incomeTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
-
+        incomeTextField.delegate = self
         
         let goalTitle = createTitleLabel(with: "Saving goal this month")
         savingGoalTextField = createTextField(placeholder: "$0.00", keyboardType: .decimalPad)
-
+        savingGoalTextField.delegate = self
         
         let remainingTitle = createTitleLabel(with: "Your budget for this month")
         remainingAmountLabel = createAmountLabel(with: "$0.00")
         
-        
-        // Add components to the stack view
         stackView.addArrangedSubview(incomeTitle)
         stackView.addArrangedSubview(incomeTextField)
         stackView.setCustomSpacing(24, after: incomeTextField)
@@ -123,7 +116,6 @@ class BudgetFormController: UIViewController {
         stackView.addArrangedSubview(remainingTitle)
         stackView.addArrangedSubview(remainingAmountLabel)
         
-
         NSLayoutConstraint.activate([
             stackView.topAnchor.constraint(equalTo: overviewContainerView.topAnchor),
             stackView.bottomAnchor.constraint(equalTo: overviewContainerView.bottomAnchor),
@@ -136,26 +128,50 @@ class BudgetFormController: UIViewController {
     // MARK: - Actions
     
     private func setupActions() {
-        
-        // Add targets for text fields to update the 'Remaining' label
-         incomeTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
-         savingGoalTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
+        incomeTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
+        savingGoalTextField.addTarget(self, action: #selector(updateRemainingBalance), for: .editingChanged)
     }
     
     @objc private func updateRemainingBalance() {
-        guard let incomeText = incomeTextField.text, !incomeText.isEmpty, let income = Decimal(string: incomeText), let goalText = savingGoalTextField.text, !goalText.isEmpty, let goal = Decimal(string: goalText) else {
-            remainingAmountLabel.text = "N/A"
+        let income = Decimal(string: incomeTextField.text ?? "") ?? 0
+        let goal = Decimal(string: savingGoalTextField.text ?? "") ?? 0
+        
+        let remainingBalance = income - goal
+        
+        if remainingBalance < 0 {
+            remainingAmountLabel.textColor = .systemRed
+        } else {
+            remainingAmountLabel.textColor = .systemGreen
+        }
+        
+        remainingAmountLabel.text = CurrencyFormatter.shared.string(from: remainingBalance)
+    }
+    
+    @objc private func savedTapped() {
+        // 1. Validate Income
+        guard let incomeText = incomeTextField.text,
+              !incomeText.isEmpty,
+              let income = Decimal(string: incomeText) else {
+            
+            showAlert(title: "Invalid Income", message: "Please enter a valid monthly income.")
             return
         }
         
-        let remainingBalance = income - goal
-        remainingAmountLabel.text = CurrencyFormatter.shared.string(from: remainingBalance) 
-    }
-    
-    @objc private func savedTapped(){
-        guard let incomeText = incomeTextField.text, !incomeText.isEmpty, let income = Decimal(string: incomeText), let goalText = savingGoalTextField.text, !goalText.isEmpty, let goal = Decimal(string: goalText) else {
-            // TODO: show alert
-            print("Invalid input")
+        if income <= 0 {
+            showAlert(title: "Invalid Income", message: "Your monthly income must be greater than $0.")
+            return
+        }
+        
+        let goalText = savingGoalTextField.text ?? ""
+        let goal = Decimal(string: goalText) ?? 0
+        
+        if goal < 0 {
+            showAlert(title: "Invalid Goal", message: "Your saving goal cannot be a negative amount.")
+            return
+        }
+        
+        if goal > income {
+            showAlert(title: "Invalid Goal", message: "Your saving goal cannot be greater than your income.")
             return
         }
         
@@ -165,7 +181,7 @@ class BudgetFormController: UIViewController {
         self.dismiss(animated: true, completion: nil)
     }
     
-    @objc private func cancelTapped(){
+    @objc private func cancelTapped() {
         self.dismiss(animated: true, completion: nil)
     }
     
@@ -201,7 +217,6 @@ class BudgetFormController: UIViewController {
         textField.backgroundColor = .secondarySystemBackground
         textField.layer.cornerRadius = 8
         
-        // Add padding
         let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 50))
         textField.leftView = paddingView
         textField.leftViewMode = .always
@@ -220,20 +235,27 @@ class BudgetFormController: UIViewController {
         label.textColor = .systemGreen
         return label
     }
-  
+    
+    // MARK: - Helpers
+    
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true)
+    }
 }
 
-extension BudgetFormController: UITextFieldDelegate{
+extension BudgetFormController: UITextFieldDelegate {
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         
-        // format the textfield value
-        guard let result = CurrencyFormatter.shared.formattedReplacement(currentText: textField.text ?? "", range: range, replacement: string) else{
+        guard let result = CurrencyFormatter.shared.formattedReplacement(currentText: textField.text ?? "", range: range, replacement: string) else {
             return false
         }
         
         textField.text = result.formatted
 
-        return false
+        textField.sendActions(for: .editingChanged)
         
+        return false
     }
 }

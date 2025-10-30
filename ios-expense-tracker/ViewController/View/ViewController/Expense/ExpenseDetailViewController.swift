@@ -144,9 +144,20 @@ class ExpenseDetailViewController: UITableViewController {
 
 // MARK: - Delegate Conformance
 
+// MARK: - ExpenseFormControllerDelegate
 extension ExpenseDetailViewController: ExpenseFormControllerDelegate {
-    func expenseFormControllerDidFinish(controller: ExpenseFormController) {
-      
+    
+    func expenseFormController(didSave expense: Expense, controller: ExpenseFormController) {
+        self.expense = expense
+        
+        self.configureUI()
+        
+        controller.dismiss(animated: true)
+        
+        delegate?.didFinishEditing(expense: expense)
+    }
+    
+    func expenseFormControllerDidCancel(controller: ExpenseFormController) {
         controller.dismiss(animated: true)
     }
 }

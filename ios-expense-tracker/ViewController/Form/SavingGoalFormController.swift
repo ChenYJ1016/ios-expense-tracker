@@ -7,7 +7,6 @@
 
 import UIKit
 
-// (MODIFIED) Updated the delegate protocol
 protocol SavingGoalFormControllerDelegate: AnyObject {
     func savingGoalFormController(_ controller: SavingGoalFormController, didSaveNew goal: SavingGoal)
     func savingGoalFormController(_ controller: SavingGoalFormController, didUpdate goal: SavingGoal)
@@ -19,20 +18,15 @@ class SavingGoalFormController: UITableViewController {
     // MARK: - Properties
     weak var delegate: SavingGoalFormControllerDelegate?
     
-    // (NEW) This property will be set when we want to edit.
-    // If this is nil, we are in "Add New" mode.
     var goalToEdit: SavingGoal?
 
-    // Cell Identifiers
     let textFieldCellIdentifier = "TextFieldCell"
     let pickerViewCellIdentifier = "PickerViewCell"
     
-    // Data State Properties
     private var goalName: String = ""
     private var targetAmount: Decimal = 0.0
     private var selectedIconName: String = ""
     
-    // Icon Picker Data
     private let iconData = [
         ("Default", "star.fill"),
         ("Car", "car.fill"),
@@ -46,7 +40,6 @@ class SavingGoalFormController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Register cells
         tableView.register(TextFieldCell.self, forCellReuseIdentifier: textFieldCellIdentifier)
         tableView.register(PickerViewCell.self, forCellReuseIdentifier: pickerViewCellIdentifier)
         
@@ -55,18 +48,13 @@ class SavingGoalFormController: UITableViewController {
         
         setupNavigationBar()
         
-        // (NEW) Check if we are in "Edit Mode" or "Add Mode"
         if let goal = goalToEdit {
-            // --- EDIT MODE ---
             title = "Edit Goal"
-            // Pre-fill the form
             goalName = goal.name
             targetAmount = goal.targetAmount
             selectedIconName = goal.iconName
         } else {
-            // --- ADD MODE ---
             title = "New Goal"
-            // Set default icon
             selectedIconName = iconData.first?.1 ?? "star.fill"
         }
         
@@ -83,33 +71,43 @@ class SavingGoalFormController: UITableViewController {
     }
 
     @objc private func handleSave() {
-        // Resign first responder to save any text field changes
         view.endEditing(true)
+                
+        let finalGoalName = goalName.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // (MODIFIED) Check if we are editing or saving new
+        if finalGoalName.isEmpty {
+            showAlert(title: "Missing Name", message: "Please enter a name for your goal (e.g., 'Vacation Fund').")
+            return
+        }
+        
+        if targetAmount <= 0 {
+            showAlert(title: "Invalid Amount", message: "Your target amount must be greater than $0.")
+            return
+        }
+        
         if var existingGoal = goalToEdit {
-            // --- EDIT MODE ---
-            // Update the existing goal object
-            existingGoal.name = goalName
+            existingGoal.name = finalGoalName
             existingGoal.targetAmount = targetAmount
             existingGoal.iconName = selectedIconName
             
-            // Call the 'didUpdate' delegate method
             delegate?.savingGoalFormController(self, didUpdate: existingGoal)
             
         } else {
-            // --- ADD MODE ---
-            // Create a new goal object
             let newGoal = SavingGoal(
-                name: goalName,
-                iconName: selectedIconName, // Use the correct order
-                savedAmount: 0, // New goals always start at 0
+                name: finalGoalName,
+                iconName: selectedIconName,
+                savedAmount: 0,
                 targetAmount: targetAmount
             )
             
-            // Call the 'didSaveNew' delegate method
             delegate?.savingGoalFormController(self, didSaveNew: newGoal)
         }
+    }
+    
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true)
     }
 
     private func setupTapGesture() {
@@ -154,7 +152,11 @@ class SavingGoalFormController: UITableViewController {
                 cell.textField.keyboardType = .decimalPad
                 cell.textField.delegate = self
                 
-                cell.textField.text = CurrencyFormatter.shared.string(from: targetAmount)
+                if !cell.textField.isEditing {
+                    cell.textField.text = CurrencyFormatter.shared.string(from: targetAmount)
+                } else {
+                    cell.textField.text = targetAmount == 0 ? "" : "\(targetAmount)"
+                }
             }
             return cell
             
@@ -226,9 +228,7 @@ extension SavingGoalFormController: UITextFieldDelegate {
 
     func textFieldDidEndEditing(_ textField: UITextField) {
         if textField.keyboardType == .decimalPad {
-
             textField.text = CurrencyFormatter.shared.string(from: self.targetAmount)
         }
     }
 }
-
