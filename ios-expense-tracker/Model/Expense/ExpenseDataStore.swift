@@ -107,4 +107,29 @@ class ExpenseDataStore {
             guard let goalID = goalID else { return nil }
             return SavingGoalDataStore.shared.loadSavingGoals().first(where: { $0.id == goalID })
         }
+    
+    func deleteAllExpenses() {
+            let fileManager = FileManager.default
+            
+            // 1. Check if the file exists
+            guard fileManager.fileExists(atPath: fileURL.path) else {
+                print("Expenses file does not exist, nothing to delete.")
+                // Still post a notification to clear the UI
+                NotificationCenter.default.post(name: .didUpdateExpenses, object: nil)
+                return
+            }
+            
+            // 2. Try to remove the file
+            do {
+                try fileManager.removeItem(at: fileURL)
+                
+                // 3. Post notification on success
+                NotificationCenter.default.post(name: .didUpdateExpenses, object: nil)
+                print("All expenses deleted successfully.")
+            } catch {
+                print("Error deleting expenses file: \(error.localizedDescription)")
+                // Optionally post notification on error too
+                NotificationCenter.default.post(name: .didUpdateExpenses, object: nil)
+            }
+        }
 }

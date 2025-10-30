@@ -20,24 +20,26 @@ class MainTabBarController: UITabBarController {
     private func setUpTabBar(){
         let dashboardViewController = DashboardViewController()
         let expenseListViewController = ListViewController()
-//        let preferencesViewController = PreferencesViewController()
+        let preferenceViewController = PreferenceViewController()
         
         dashboardViewController.tabBarItem = UITabBarItem(title: "Overview", image: UIImage(systemName: "chart.pie") , tag: 0)
         expenseListViewController.tabBarItem = UITabBarItem(title: "Expenses", image: UIImage(systemName: "dollarsign.square"), tag: 1)
+        preferenceViewController.tabBarItem = UITabBarItem(title: "Preference", image: UIImage(systemName: "gearshape"), tag: 2)
         
         let dashboardNavigationController = createNavigationController(for: dashboardViewController)
         let expenseNavigationController = createNavigationController(for: expenseListViewController)
+        let preferenceNavigationController = createNavigationController(for: preferenceViewController)
         
         
         self.viewControllers = [
             dashboardNavigationController,
-            expenseNavigationController
+            expenseNavigationController,
+            preferenceNavigationController
         ]
 
     }
     
     private func createNavigationController(for rootViewController: UIViewController) -> UINavigationController {
-        // Create navigation controller with this view controller as root
         let navigationController = UINavigationController(rootViewController: rootViewController)
 
         return navigationController
