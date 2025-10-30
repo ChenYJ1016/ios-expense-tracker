@@ -7,12 +7,12 @@
 import UIKit
 
 nonisolated enum ExpenseType: String, CaseIterable, Codable, Hashable{
-    case bills
-    case food
-    case grocery
-    case savings
-    case transport
-    case miscellaneous
+    case bills = "Bills"
+    case food = "Food"
+    case grocery = "Groceries"
+    case savings = "Savings"
+    case transport = "Transportation"
+    case misc = "Misc."
     
     var iconName: String {
             switch self {
@@ -26,17 +26,27 @@ nonisolated enum ExpenseType: String, CaseIterable, Codable, Hashable{
                 return "banknote"
             case .transport:
                 return "bus"
-            case .miscellaneous:
+            case .misc:
                 return "giftcard"
             }
         }
 }
 
 nonisolated struct Expense: Identifiable, Codable, Hashable{
-    let id = UUID()
+    let id: UUID
+    var goalID: UUID?
     var name: String
     var date: Date
     var type: ExpenseType
     var amount: Decimal
     
+    
+    init(id: UUID = UUID(), name: String, date: Date, type: ExpenseType, amount: Decimal, goalID: UUID? = nil){
+        self.id = id
+        self.name = name
+        self.date = date
+        self.type = type
+        self.amount = amount
+        self.goalID = goalID
+    }
 }

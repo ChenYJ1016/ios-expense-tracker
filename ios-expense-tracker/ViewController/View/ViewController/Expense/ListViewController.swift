@@ -36,7 +36,7 @@ class ListViewController: UIViewController {
         let hasScope = searchController.searchBar.selectedScopeButtonIndex != 0
         let hasDateFilter = currentStartDate != nil || currentEndDate != nil
         
-        return searchController.isActive && (hasText || hasScope || hasDateFilter)
+        return searchController.isActive || hasText || hasScope || hasDateFilter
     }
     
     private var scopeTitles: [String] = ["All"] + ExpenseType.allCases.map { $0.rawValue }
@@ -44,9 +44,16 @@ class ListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Do any additional setup after loading the view.
         view.backgroundColor = .systemBackground
         title = "Expenses"
+        
+        // Add observer to listen for data changes from any source
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(dataDidChange),
+            name: .didUpdateExpenses,
+            object: nil
+        )
         
         setupNavigationBar()
         setupSearchController()
@@ -59,6 +66,11 @@ class ListViewController: UIViewController {
         applySnapshot()
         
     }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     
     private func setupSearchController(){
         searchController.searchResultsUpdater = self
@@ -74,9 +86,7 @@ class ListViewController: UIViewController {
         searchController.searchBar.scopeButtonTitles = scopeTitles
         searchController.searchBar.delegate = self
         searchController.searchBar.showsScopeBar = false
-        
-        searchController.searchBar.searchTextField.textColor = .white
-        
+                
         searchController.searchBar.layoutIfNeeded()
 
         if let segmentedControl = searchController.searchBar.findSegmentedControl() {
@@ -114,10 +124,11 @@ class ListViewController: UIViewController {
             dateFilterView.isHidden = true
             
             NSLayoutConstraint.activate([
-                dateFilterView.topAnchor.constraint(equalTo: view.topAnchor),
+                dateFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
                 dateFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 dateFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
             ])
+            
         }
     
     @objc private func selectDateTapped() {
@@ -175,8 +186,17 @@ class ListViewController: UIViewController {
     
     // MARK: Helper
     
+    @objc private func dataDidChange() {
+        allExpenses = store.loadExpenses()
+        
+        if isSearching {
+            updateSearchResults(for: searchController)
+        } else {
+            applySnapshot()
+        }
+    }
+    
     @objc private func addNewExpense(){
-        // add new expense
         let addVC = ExpenseFormController()
         addVC.delegate = self
         let navController = UINavigationController(rootViewController: addVC)
@@ -187,9 +207,12 @@ class ListViewController: UIViewController {
         let label = UILabel()
         label.textAlignment = .center
         label.numberOfLines = 0
+        
+        let list = isSearching ? filteredExpenses : allExpenses
+        
         if allExpenses.isEmpty {
             label.text = "No expenses yet"
-        } else if isSearching && filteredExpenses.isEmpty {
+        } else if list.isEmpty {
             label.text = "No results."
         } else {
             expenseTableView.backgroundView = nil
@@ -208,12 +231,33 @@ class ListViewController: UIViewController {
 
         }
     }
+    
+    // (NEW) This function now holds the alert logic
+    private func showDeleteConfirmationAlert(for expense: Expense) {
+        let alert = UIAlertController(
+            title: "Delete Expense?",
+            message: "Are you sure you want to delete '\(expense.name)'? This action cannot be undone.",
+            preferredStyle: .alert
+        )
+
+        // "Delete" Action
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
+            // This is the logic that used to be in the swipe action.
+            // Tell the store to delete. The notification will handle the refresh.
+            self.store.deleteExpense(expense)
+        }))
+
+        // "Cancel" Action
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+
+        // Present the alert
+        self.present(alert, animated: true)
+    }
 }
 
 extension ListViewController{
     private func setupDiffableDataSource() {
         dataSource = UITableViewDiffableDataSource<ExpenseType, Expense>(tableView: expenseTableView) {
-            // Add the explicit type for 'item' here
             tableView, indexPath, item in
             
             guard let cell = tableView.dequeueReusableCell(withIdentifier: ExpenseTableViewCell.identifier, for: indexPath) as? ExpenseTableViewCell else {
@@ -234,20 +278,14 @@ extension ListViewController{
 
         let current = isSearching ? filteredExpenses : allExpenses
         
-        // Group items by type (1)
         let grouped = Dictionary(grouping: current, by: { $0.type })
-
-        // Sort types alphabetically (1)
         let sortedTypes = grouped.keys.sorted(by: { $0.rawValue < $1.rawValue })
 
-        // Build snapshot
         snapshot.appendSections(sortedTypes)
         for type in sortedTypes {
-            // (2) Force unwrap!
             snapshot.appendItems(grouped[type]!, toSection: type)
         }
 
-            // Apply it to the data source
         dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
         updateBackgroundMessage()
     }
@@ -274,34 +312,37 @@ extension UIView {
 extension ListViewController: UITableViewDelegate{
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let tappedExpense = dataSource.itemIdentifier(for: indexPath) else {return}
-        
-        let detailVC = ExpenseDetailViewController(expense: tappedExpense, index: indexPath.row)
+                
+        let detailVC = ExpenseDetailViewController(expense: tappedExpense)
         detailVC.delegate = self
-        navigationController?.pushViewController(detailVC, animated: true)
+        self.navigationController?.pushViewController(detailVC, animated: true)
     }
     
     func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
-        // TODO: check if expense has image, and adjust height accordingly
         return 85.0
     }
     
+    // (MODIFIED) This now calls the alert function
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-
-        guard let expenseToDelete = dataSource.itemIdentifier(for: indexPath) else { return }
-        allExpenses.removeAll { $0.id == expenseToDelete.id }
-        store.saveExpenses(allExpenses)
-        applySnapshot()
+        if editingStyle == .delete {
+            guard let expenseToDelete = dataSource.itemIdentifier(for: indexPath) else { return }
+            // Show the alert instead of deleting directly
+            showDeleteConfirmationAlert(for: expenseToDelete)
+        }
     }
     
+    // (MODIFIED) This now calls the alert function
     func tableView(_ tableView: UITableView,
                    trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath)
     -> UISwipeActionsConfiguration? {
         guard let expense = dataSource.itemIdentifier(for: indexPath) else { return nil }
 
-        let delete = UIContextualAction(style: .destructive, title: "Delete") { _,_,done in
-            self.allExpenses.removeAll { $0.id == expense.id }
-            self.store.saveExpenses(self.allExpenses)
-            self.applySnapshot()
+        let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _,_,done in
+            // 1. Show the confirmation alert
+            self?.showDeleteConfirmationAlert(for: expense)
+            
+            // 2. Call done(true) to close the swipe action row
+            // so the user isn't left in a weird state.
             done(true)
         }
         
@@ -312,21 +353,14 @@ extension ListViewController: UITableViewDelegate{
 }
 
 extension ListViewController: ExpenseFormControllerDelegate{
-    func didAddExpense(_ expense: Expense) {
-        allExpenses.append(expense)
-        store.saveExpenses(allExpenses)
-        applySnapshot()
+    func expenseFormControllerDidFinish(controller: ExpenseFormController) {
+        controller.dismiss(animated: true)
     }
 }
 
 extension ListViewController: ExpenseDetailViewControllerDelegate{
     func didFinishEditing(expense updatedExpense: Expense) {
-        if let index = allExpenses.firstIndex(where: { $0.id == updatedExpense.id }) {
-            allExpenses[index] = updatedExpense
-            
-            store.saveExpenses(allExpenses)
-            applySnapshot()
-        }
+        store.updateExpense(updatedExpense)
     }
 }
 

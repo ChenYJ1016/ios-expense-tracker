@@ -21,13 +21,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         appearance.configureWithDefaultBackground()
         appearance.backgroundColor = .systemMint
         appearance.shadowColor = .clear
-        
             
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.boldSystemFont(ofSize: 30)]
-        
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label, .font: UIFont.boldSystemFont(ofSize: 30)]
 
-        appearance.titleTextAttributes = [.foregroundColor: UIColor.white, .font: UIFont.systemFont(ofSize: 17, weight: .semibold)]
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.label, .font: UIFont.systemFont(ofSize: 17, weight: .semibold)]
 
+        UINavigationBar.appearance().prefersLargeTitles = true
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
@@ -39,8 +38,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         ExpenseDataStore.shared.loadMockDataIfEmpty()
         
         let mainVC = MainTabBarController()
-
         
+        window?.backgroundColor = .systemGroupedBackground
         window?.rootViewController = mainVC
         window?.makeKeyAndVisible()
     }
